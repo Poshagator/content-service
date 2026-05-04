@@ -17,7 +17,6 @@ CREATE TABLE media_file (
     width_px    int,
     height_px   int,
     size_bytes  bigint,
-    permission  varchar NOT NULL DEFAULT 'app_media_file',
     created_at  timestamp NOT NULL DEFAULT now(),
     updated_at  timestamp NOT NULL DEFAULT now()
 );
@@ -30,7 +29,6 @@ CREATE TABLE product_category (
     filial_id   uuid NOT NULL REFERENCES filial(id) ON DELETE CASCADE,
     name        varchar  NOT NULL,
     photo_url   varchar,
-    permission  varchar  NOT NULL DEFAULT 'app_product_category',
     created_at  timestamp NOT NULL DEFAULT now(),
     updated_at  timestamp NOT NULL DEFAULT now()
 );
@@ -48,7 +46,6 @@ CREATE TABLE product (
     currency    char(3)  NOT NULL DEFAULT 'RUB',
     weight      varchar,
     created_by  uuid,
-    permission  varchar  NOT NULL DEFAULT 'app_product',
     created_at  timestamp NOT NULL DEFAULT now(),
     updated_at  timestamp NOT NULL DEFAULT now()
 );
@@ -60,7 +57,6 @@ CREATE TABLE edu_subject (
     id         uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
     code       varchar,
     name       varchar NOT NULL,
-    permission varchar NOT NULL DEFAULT 'app_edu_subject',
     created_at timestamp NOT NULL DEFAULT now(),
     updated_at timestamp NOT NULL DEFAULT now()
 );
@@ -75,7 +71,6 @@ CREATE TABLE room (
     layout_json jsonb,
     floor       int,
     note        text,
-    permission  varchar NOT NULL DEFAULT 'app_room',
     created_at  timestamp NOT NULL DEFAULT now(),
     updated_at  timestamp NOT NULL DEFAULT now()
 );
@@ -88,7 +83,6 @@ CREATE TABLE person (
     bio         text,
     birth_date  date,
     photo_url   varchar,
-    permission  varchar NOT NULL DEFAULT 'app_person',
     created_at  timestamp NOT NULL DEFAULT now(),
     updated_at  timestamp NOT NULL DEFAULT now()
 );
@@ -100,7 +94,6 @@ CREATE TABLE staff (
     staff_type     varchar NOT NULL,
     position_title varchar,
     active         boolean NOT NULL DEFAULT TRUE,
-    permission     varchar NOT NULL DEFAULT 'app_staff',
     created_at     timestamp NOT NULL DEFAULT now(),
     updated_at     timestamp NOT NULL DEFAULT now()
 );
@@ -112,7 +105,6 @@ CREATE TABLE academic_term (
     starts_on      date NOT NULL,
     ends_on        date NOT NULL,
     week_start     int NOT NULL DEFAULT 1,
-    permission     varchar NOT NULL DEFAULT 'app_academic_term',
     created_at     timestamp NOT NULL DEFAULT now(),
     updated_at     timestamp NOT NULL DEFAULT now()
 );
@@ -121,7 +113,6 @@ CREATE TABLE edu_group (
     id             uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
     filial_id      uuid NOT NULL REFERENCES filial(id) ON DELETE CASCADE,
     name           varchar NOT NULL,
-    permission     varchar NOT NULL DEFAULT 'app_edu_group',
     created_at     timestamp NOT NULL DEFAULT now(),
     updated_at     timestamp NOT NULL DEFAULT now()
 );
@@ -137,7 +128,6 @@ CREATE TABLE timetable_entry (
     starts_at     time NOT NULL,
     ends_at       time NOT NULL,
     week_type     varchar NOT NULL DEFAULT 'ALL',
-    permission    varchar NOT NULL DEFAULT 'app_timetable_entry',
     created_at    timestamp NOT NULL DEFAULT now(),
     updated_at    timestamp NOT NULL DEFAULT now()
 );
@@ -151,7 +141,6 @@ CREATE TABLE timetable_exception (
     new_classroom_id uuid REFERENCES room(id) ON DELETE SET NULL,
     new_starts_at    time,
     new_ends_at      time,
-    permission       varchar NOT NULL DEFAULT 'app_timetable_exception',
     created_at       timestamp NOT NULL DEFAULT now(),
     updated_at       timestamp NOT NULL DEFAULT now()
 );

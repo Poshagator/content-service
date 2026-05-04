@@ -29,15 +29,14 @@ type ProductModifierOption struct {
 	MinQty        *int     `json:"min_qty,omitempty"`
 	DefaultState  *bool    `json:"default_state,omitempty"`
 
-	SortOrder int `json:"sort_order"` // <-- НОВОЕ
+	SortOrder int `json:"sort_order"`
 }
 
 type ProductModifierKind struct {
-	ID         uuid.UUID `json:"id"`
-	Code       string    `json:"code"`
-	Permission string    `json:"-"`
-	CreatedAt  time.Time `json:"created_at"`
-	UpdatedAt  time.Time `json:"updated_at"`
+	ID        uuid.UUID `json:"id"`
+	Code      string    `json:"code"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 type ProductModifierGroup struct {
@@ -61,13 +60,12 @@ type CategoryGroup struct {
 }
 
 type ProductCategory struct {
-	ID         uuid.UUID `db:"id" json:"id"`
-	FilialID   uuid.UUID `db:"filial_id" json:"filial_id"`
-	Name       string    `db:"name" json:"name"`
-	PhotoURL   string    `db:"photo_url" json:"photo_url"`
-	Permission string    `db:"permission" json:"-"`
-	CreatedAt  time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt  time.Time `db:"updated_at" json:"updated_at"`
+	ID        uuid.UUID `db:"id" json:"id"`
+	FilialID  uuid.UUID `db:"filial_id" json:"filial_id"`
+	Name      string    `db:"name" json:"name"`
+	PhotoURL  string    `db:"photo_url" json:"photo_url"`
+	CreatedAt time.Time `db:"created_at" json:"created_at"`
+	UpdatedAt time.Time `db:"updated_at" json:"updated_at"`
 }
 
 type Product struct {
@@ -84,7 +82,6 @@ type Product struct {
 	Weight        string                 `db:"weight" json:"weight"`
 	CreatedBy     uuid.UUID              `db:"created_by" json:"created_by"`
 	Modifiers     []ProductModifierGroup `json:"modifiers"`
-	Permission    string                 `db:"permission" json:"-"`
 	CreatedAt     time.Time              `db:"created_at" json:"created_at"`
 	UpdatedAt     time.Time              `db:"updated_at" json:"updated_at"`
 	MediaUrls     []string               `db:"media_urls" json:"media_urls"`
@@ -104,7 +101,6 @@ type ProductDAO struct {
 	Currency      sql.NullString  `db:"currency" json:"currency"`
 	Weight        sql.NullString  `db:"weight" json:"weight"`
 	CreatedBy     sql.NullString  `db:"created_by" json:"created_by"`
-	Permission    sql.NullString  `db:"permission" json:"-"`
 	CreatedAt     sql.NullTime    `db:"created_at" json:"created_at"`
 	UpdatedAt     sql.NullTime    `db:"updated_at" json:"updated_at"`
 	MediaUrls     []string        `db:"media_urls" json:"media_urls"`
@@ -124,7 +120,6 @@ func (p *ProductDAO) ToProduct() *Product {
 		Currency:      p.Currency.String,
 		Weight:        p.Weight.String,
 		CreatedBy:     nullUUID(p.CreatedBy),
-		Permission:    p.Permission.String,
 		CreatedAt:     p.CreatedAt.Time,
 		UpdatedAt:     p.UpdatedAt.Time,
 		MediaUrls:     p.MediaUrls,
@@ -141,15 +136,14 @@ func (p ProductsDAO) ToProducts() []Product {
 }
 
 type ProductModifierGroupLink struct {
-	ProductID  uuid.UUID `db:"product_id" json:"product_id"`
-	GroupID    uuid.UUID `db:"group_id" json:"group_id"`
-	SortOrder  int       `db:"sort_order" json:"sort_order"`
-	Required   bool      `db:"required" json:"required"`
-	MinSelect  int       `db:"min_select" json:"min_select"`
-	MaxSelect  int       `db:"max_select" json:"max_select"`
-	Permission string    `db:"permission" json:"-"`
-	CreatedAt  time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt  time.Time `db:"updated_at" json:"updated_at"`
+	ProductID uuid.UUID `db:"product_id" json:"product_id"`
+	GroupID   uuid.UUID `db:"group_id" json:"group_id"`
+	SortOrder int       `db:"sort_order" json:"sort_order"`
+	Required  bool      `db:"required" json:"required"`
+	MinSelect int       `db:"min_select" json:"min_select"`
+	MaxSelect int       `db:"max_select" json:"max_select"`
+	CreatedAt time.Time `db:"created_at" json:"created_at"`
+	UpdatedAt time.Time `db:"updated_at" json:"updated_at"`
 }
 
 type ProductModifierOptionLink struct {
@@ -158,7 +152,6 @@ type ProductModifierOptionLink struct {
 	PriceDelta  float64   `db:"price_delta" json:"price_delta"`
 	WeightDelta float64   `db:"weight_delta" json:"weight_delta"`
 	MaxQty      int       `db:"max_qty" json:"max_qty"`
-	Permission  string    `db:"permission" json:"-"`
 }
 
 type ProductMedia struct {
@@ -216,5 +209,5 @@ type OrderItemDescription struct {
 	ProductID uuid.UUID `json:"product_id"`
 	Title     string    `json:"title"`
 	Body      string    `json:"body,omitempty"`
-	Modifiers []string  `json:"modifiers,omitempty"` // «Размер: 30 см», «Соус: 2 шт» …
+	Modifiers []string  `json:"modifiers,omitempty"`
 }

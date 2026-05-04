@@ -11,7 +11,7 @@ import (
 
 const qGetEduGroup = `
 SELECT 
-    id, institution_id as filial_id, name, permission
+    id, institution_id as filial_id, name
 from
     public.edu_group
 where
@@ -37,14 +37,14 @@ func (r *Repository) GetEduGroup(ctx context.Context, id uuid.UUID) (*edu.EduGro
 
 const qCreateEduGroups = `
 insert into 
-    public.edu_group (institution_id, name, permission)
+    public.edu_group (institution_id, name)
 values
-	($1, $2, $3)
+	($1, $2)
 returning id
 `
 
 func (r *Repository) CreateEduGroups(ctx context.Context, EduGroups *edu.EduGroup) error {
-	err := r.db.QueryRow(ctx, qCreateEduGroups, EduGroups.FilialID, EduGroups.Name, EduGroups.Permission).Scan(&EduGroups.ID)
+	err := r.db.QueryRow(ctx, qCreateEduGroups, EduGroups.FilialID, EduGroups.Name).Scan(&EduGroups.ID)
 	if err != nil {
 		r.log.Error("failed to create EduGroups", zap.Error(err))
 		return err
@@ -57,15 +57,7 @@ const qUpdateEduGroups = `
 UPDATE public.edu_group
 SET
     institution_id = $2,
---     CASE
- --         WHEN permission = $4 THEN $2
- --         ELSE institution_id
- --     END,
-     name = $3
- --     CASE
- --         WHEN permission = $4 THEN $3
- --         ELSE name
- --     END
+    name = $3
  WHERE id = $1`
 
 func (r *Repository) UpdateEduGroups(ctx context.Context, EduGroups *edu.EduGroup) error {
@@ -79,7 +71,7 @@ func (r *Repository) UpdateEduGroups(ctx context.Context, EduGroups *edu.EduGrou
 	return nil
 }
 
-const qDeleteEduGroups = `delete from public.edu_group where id = $1 --and permission = $2`
+const qDeleteEduGroups = `delete from public.edu_group where id = $1`
 
 func (r *Repository) DeleteEduGroups(ctx context.Context, id uuid.UUID) error {
 	_, err := r.db.Exec(ctx, qDeleteEduGroups, id)
@@ -93,7 +85,7 @@ func (r *Repository) DeleteEduGroups(ctx context.Context, id uuid.UUID) error {
 
 const qGetEduGroups = `
 select 
-    id, institution_id as filial_id, permission, name
+    id, institution_id as filial_id, name
 from
     public.edu_group
 where 

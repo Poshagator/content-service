@@ -17,7 +17,6 @@ type AcademicTerm struct {
 
 type AcademicTermsDao []AcademicTermDao
 type AcademicTermDao struct {
-	//Permission sql.NullString `db:"permission" json:"permission"`
 	ID        sql.NullString `db:"id" json:"id"`
 	FilialID  sql.NullString `db:"filial_id" json:"filial_id"`
 	Name      sql.NullString `db:"name" json:"name"`
@@ -28,9 +27,6 @@ type AcademicTermDao struct {
 
 func (e *AcademicTermDao) ToAcademicTerm() *AcademicTerm {
 	eg := &AcademicTerm{
-		//ID: e.ID.String,
-		//FilialID:  e.FilialID.String,
-		//Permission: e.Permission.String,
 		Name:      e.Name.String,
 		StartsOn:  e.StartsOn.Time,
 		EndsOn:    e.EndsOn.Time,

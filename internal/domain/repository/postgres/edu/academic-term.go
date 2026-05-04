@@ -58,18 +58,10 @@ const qUpdateAcademicTerms = `
 UPDATE public.academic_term
 SET
     institution_id = $2,
---     CASE
- --         WHEN permission = $4 THEN $2
- --         ELSE institution_id
- --     END,
-     name = $3,
- --     CASE
- --         WHEN permission = $4 THEN $3
- --         ELSE name
- --     END
-     starts_on = $4,
-     ends_on = $5,
-     week_start = $6
+    name = $3,
+    starts_on = $4,
+    ends_on = $5,
+    week_start = $6
  WHERE id = $1`
 
 func (r *Repository) UpdateAcademicTerms(ctx context.Context, AcademicTerms *edu.AcademicTerm) error {
@@ -85,7 +77,7 @@ func (r *Repository) UpdateAcademicTerms(ctx context.Context, AcademicTerms *edu
 	return nil
 }
 
-const qDeleteAcademicTerms = `delete from public.academic_term where id = $1 --and permission = $2`
+const qDeleteAcademicTerms = `delete from public.academic_term where id = $1`
 
 func (r *Repository) DeleteAcademicTerms(ctx context.Context, id uuid.UUID) error {
 	_, err := r.db.Exec(ctx, qDeleteAcademicTerms, id)
