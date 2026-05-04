@@ -10,7 +10,7 @@ import (
 func NewConfig() (*ConfigModel, error) {
 	var cfg ConfigModel
 	v := viper.New()
-	v.AddConfigPath("/etc/product-service")
+	v.AddConfigPath("/etc/github.com/poshagator/content-service")
 	v.SetConfigName("config")
 	v.SetConfigType("yaml")
 

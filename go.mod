@@ -1,4 +1,4 @@
-module content-service
+module github.com/poshagator/content-service
 
 go 1.25.0
 

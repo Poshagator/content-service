@@ -1,29 +1,31 @@
 package http
 
+// createController registers all public endpoints in a single place,
+// following the same style as the product-service router.
 func (s *Server) createController() {
-	common := s.serv.Group("/content")
-	common.GET("/product/get", s.GetProducts)
-	common.POST("/product/create", s.CreateProducts)
-	common.POST("/product/edit", s.UpdateProduct)
-	common.POST("/product/delete", s.DeleteProduct)
-	common.GET("/product/get-by-id", s.GetProduct)
+	product := s.serv.Group("/content/product")
+	product.GET("/get", s.GetProducts)
+	product.POST("/create", s.CreateProducts)
+	product.POST("/edit", s.UpdateProduct)
+	product.POST("/delete", s.DeleteProduct)
+	product.GET("/get-by-id", s.GetProduct)
 
-	common.GET("/product/modifier/list-by-filial", s.ListFilialModifiers)
-	common.POST("/product/modifier/attach", s.AttachModifierToProduct)
-	common.POST("/product/modifier/group/create", s.CreateModifierGroup)
-	common.POST("/product/modifier/group/update", s.UpdateModifierGroup)
-	common.POST("/product/modifier/group/delete", s.DeleteModifierGroup)
+	product.GET("/modifier/list-by-filial", s.ListFilialModifiers)
+	product.POST("/modifier/attach", s.AttachModifierToProduct)
+	product.POST("/modifier/group/create", s.CreateModifierGroup)
+	product.POST("/modifier/group/update", s.UpdateModifierGroup)
+	product.POST("/modifier/group/delete", s.DeleteModifierGroup)
 
-	eduGroup.POST("edu/filials/edu-groups", s.CreateEduGroup)
-	eduGroup.POST("edu/edu-groups", s.UpdateEduGroup)
-	eduGroup.POST("edu/edu-groups", s.DeleteEduGroup)
-	common.GET("edu/filials/edu-groups", s.ListEduGroups)
-	common.GET("edu/filials/edu-groups/get-by-id", s.GetEduGroup)
+	edu := s.serv.Group("/content/edu")
+	edu.GET("/filials/edu-groups", s.ListEduGroups)
+	edu.GET("/filials/edu-groups/get-by-id", s.GetEduGroup)
+	edu.POST("/filials/edu-groups", s.CreateEduGroup)
+	edu.POST("/edu-groups/update", s.UpdateEduGroup)
+	edu.POST("/edu-groups/delete", s.DeleteEduGroup)
 
-	AcademicTerm.POST("edu/filials/academic-terms", s.CreateAcademicTerm)
-	AcademicTerm.POST("edu/academic-terms", s.UpdateAcademicTerm)
-	AcademicTerm.POST("edu/academic-terms", s.DeleteAcademicTerm)
-	common.GET("edu/filials/academic-terms", s.ListAcademicTerms)
-	common.GET("edu/filials/academic-terms/get-by-id", s.GetAcademicTerm)
-
+	edu.GET("/filials/academic-terms", s.ListAcademicTerms)
+	edu.GET("/filials/academic-terms/get-by-id", s.GetAcademicTerm)
+	edu.POST("/filials/academic-terms", s.CreateAcademicTerm)
+	edu.POST("/academic-terms/update", s.UpdateAcademicTerm)
+	edu.POST("/academic-terms/delete", s.DeleteAcademicTerm)
 }

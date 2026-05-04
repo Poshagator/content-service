@@ -2,7 +2,7 @@ package postgres
 
 import (
 	"context"
-	"edu-service/internal/domain/entities"
+	"github.com/poshagator/content-service/internal/domain/entities"
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"

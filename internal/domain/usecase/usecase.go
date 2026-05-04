@@ -2,20 +2,16 @@ package usecase
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"google.golang.org/protobuf/types/known/timestamppb"
-	orderclient "product-service/internal/domain/clients/order/grpc"
-	orderpb "product-service/pkg/proto/order/gen/go"
 	"sort"
 	"strings"
 
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 
-	"product-service/internal/domain/entities"
-	"product-service/internal/domain/repository/postgres"
-	"product-service/pkg"
+	"github.com/poshagator/content-service/internal/domain/entities"
+	"github.com/poshagator/content-service/internal/domain/repository/postgres"
+	"github.com/poshagator/content-service/pkg"
 )
 
 // -----------------------------------------------------------------------------
@@ -23,20 +19,17 @@ import (
 // -----------------------------------------------------------------------------
 
 type Usecase struct {
-	log      *zap.Logger
-	repo     *postgres.Repository
-	orderCli *orderclient.Client
+	log  *zap.Logger
+	repo *postgres.Repository
 }
 
 func NewUsecase(
 	log *zap.Logger,
 	repo *postgres.Repository,
-	oc *orderclient.Client,
 ) (*Usecase, error) {
 	return &Usecase{
-		log:      log.Named("usecase"),
-		repo:     repo,
-		orderCli: oc,
+		log:  log.Named("usecase"),
+		repo: repo,
 	}, nil
 }
 
@@ -337,167 +330,4 @@ func normalizeModifierGroup(g *entities.ProductModifierGroup, requireOptions boo
 	})
 
 	return nil
-}
-
-// fragment ‑‑ internal/domain/usecase/usecase.go
-func (u *Usecase) CreateOrder(ctx context.Context, in *entities.OrderInput) (*entities.Order, error) {
-	req := &orderpb.CreateOrderRequest{
-		FilialId: in.FilialID.String(),
-		UserId:   in.UserID.String(),
-		TypeCode: in.TypeCode,
-		Comment:  in.Comment,
-		Items: func() []*orderpb.OrderItemInput {
-			out := make([]*orderpb.OrderItemInput, len(in.Items))
-			for i, it := range in.Items {
-				out[i] = &orderpb.OrderItemInput{
-					ProductId:     it.ProductID.String(),
-					Qty:           int32(it.Qty),
-					ModifiersJson: it.ModifiersJSON,
-				}
-			}
-			return out
-		}(),
-	}
-
-	// one‑of details
-	switch in.TypeCode {
-	case "delivery":
-		req.Details = &orderpb.CreateOrderRequest_Delivery{
-			Delivery: &orderpb.DeliveryInfo{
-				AddressId:    in.Delivery.AddressID.String(),
-				DeliveryTime: timestamppb.New(in.Delivery.DeliveryAt),
-			},
-		}
-	case "takeaway":
-		req.Details = &orderpb.CreateOrderRequest_Takeaway{
-			Takeaway: &orderpb.TakeawayInfo{
-				PickupTime: timestamppb.New(in.Takeaway.PickupAt),
-			},
-		}
-	case "table":
-		req.Details = &orderpb.CreateOrderRequest_Table{
-			Table: &orderpb.TableInfo{
-				TableNumber: in.Table.TableNumber,
-			},
-		}
-	}
-
-	resp, err := u.orderCli.Service.CreateOrder(ctx, req)
-	if err != nil {
-		u.log.Error("gRPC CreateOrder failed", zap.Error(err))
-		return nil, err
-	}
-
-	od := resp.GetOrder()
-	if od == nil {
-		return nil, fmt.Errorf("order-service returned empty order")
-	}
-
-	return &entities.Order{
-		ID:         uuid.MustParse(od.Id),
-		FilialID:   uuid.MustParse(od.FilialId),
-		Status:     od.StatusCode,
-		TotalPrice: od.TotalPrice,
-		Currency:   od.Currency,
-		CreatedAt:  od.CreatedAt.AsTime(),
-	}, nil
-}
-
-func (u *Usecase) DescribeOrder(
-	ctx context.Context,
-	items []entities.OrderItemInput,
-) ([]entities.OrderItemDescription, error) {
-
-	// собираем уникальные product_id
-	ids := make([]uuid.UUID, 0, len(items))
-	seen := map[uuid.UUID]struct{}{}
-	for _, it := range items {
-		if _, ok := seen[it.ProductID]; !ok {
-			ids = append(ids, it.ProductID)
-			seen[it.ProductID] = struct{}{}
-		}
-	}
-
-	// тянем продукты + все их группы/опции
-	products, err := u.repo.GetProductsByIDs(ctx, ids)
-	if err != nil {
-		u.log.Error("GetProductsByIDs", zap.Error(err))
-		return nil, err
-	}
-	pmap := make(map[uuid.UUID]entities.Product, len(products))
-	for _, p := range products {
-		pmap[p.ID] = p
-	}
-
-	// формируем описание под каждый item
-	out := make([]entities.OrderItemDescription, len(items))
-	for i, it := range items {
-		p, ok := pmap[it.ProductID]
-		if !ok {
-			return nil, fmt.Errorf("product %s not found", it.ProductID)
-		}
-
-		descr := entities.OrderItemDescription{
-			ProductID: p.ID,
-			Title:     p.Title,
-			Body:      p.Body,
-		}
-
-		// если modifiers_json пустой — отдаём только продукт
-		if it.ModifiersJSON != "" {
-			modsText, err := u.pickSelectedModifiers(p, it.ModifiersJSON)
-			if err != nil {
-				return nil, err
-			}
-			descr.Modifiers = modsText
-		}
-		out[i] = descr
-	}
-	return out, nil
-}
-
-// pickSelectedModifiers фильтрует p.Modifiers по JSON‑выбору
-// и возвращает массив строк «Группа: Опция …».
-func (u *Usecase) pickSelectedModifiers(
-	p entities.Product,
-	raw string,
-) ([]string, error) {
-	// формат JSON в заказе: { "<group_id>": ["<option_id>", …] }
-	var sel map[string][]string
-	if err := json.Unmarshal([]byte(raw), &sel); err != nil {
-		return nil, fmt.Errorf("bad modifiers_json: %w", err)
-	}
-
-	// индексируем группы/опции по id для быстрого доступа
-	gIdx := map[uuid.UUID]entities.ProductModifierGroup{}
-	oIdx := map[uuid.UUID]entities.ProductModifierOption{}
-	for _, g := range p.Modifiers {
-		gIdx[g.ID] = g
-		for _, o := range g.Options {
-			oIdx[o.ID] = o
-		}
-	}
-
-	var out []string
-	for gStr, opts := range sel {
-		gid, err := uuid.Parse(gStr)
-		if err != nil {
-			continue // пропускаем мусор
-		}
-		g, ok := gIdx[gid]
-		if !ok {
-			continue
-		}
-		for _, oidStr := range opts {
-			oid, err := uuid.Parse(oidStr)
-			if err != nil {
-				continue
-			}
-			if o, ok := oIdx[oid]; ok {
-				out = append(out, fmt.Sprintf("%s: %s", g.Name, o.Name))
-			}
-		}
-	}
-	sort.Strings(out) // стабильный порядок
-	return out, nil
 }

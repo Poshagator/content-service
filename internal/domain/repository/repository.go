@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"product-service/internal/domain/repository/postgres"
+	"github.com/poshagator/content-service/internal/domain/repository/postgres"
 	"go.uber.org/fx"
 )
 

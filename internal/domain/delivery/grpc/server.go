@@ -1,9 +1,9 @@
 package grpc
 
 import (
-	"product-service/config"
-	"product-service/internal/domain/usecase"
-	//protos "product-service/pkg/proto/auth/gen/go"
+	"github.com/poshagator/content-service/config"
+	"github.com/poshagator/content-service/internal/domain/usecase"
+	//protos "github.com/poshagator/content-service/pkg/proto/auth/gen/go"
 	"context"
 	"fmt"
 	"go.uber.org/zap"

@@ -1,6 +1,6 @@
 package main
 
-import "product-service/internal/app"
+import "github.com/poshagator/content-service/internal/app"
 
 func main() {
 	app.New().Run()

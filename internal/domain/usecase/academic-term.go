@@ -2,8 +2,8 @@ package usecase
 
 import (
 	"context"
-	"edu-service/internal/domain/entities"
-	"edu-service/pkg"
+	"github.com/poshagator/content-service/internal/domain/entities"
+	"github.com/poshagator/content-service/pkg"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )

@@ -16,8 +16,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"product-service/config"
-	"product-service/internal/domain/entities"
+	"github.com/poshagator/content-service/config"
+	"github.com/poshagator/content-service/internal/domain/entities"
 )
 
 // -----------------------------------------------------------------------------
