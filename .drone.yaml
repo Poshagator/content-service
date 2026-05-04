@@ -1,0 +1,73 @@
+kind: pipeline
+type: docker
+name: content-service
+
+trigger:
+  branch:
+    - prod
+  event:
+    - push
+
+node:
+  env: prod
+
+clone:
+  disable: true
+
+volumes:
+  - name: dockersock
+    host:
+      path: /var/run/docker.sock
+  - name: deploy
+    host:
+      path: /opt/deploy
+
+steps:
+  - name: clone
+    image: alpine/git
+    network_mode: internal
+    environment:
+      GITHUB_TOKEN:
+        from_secret: GITHUB_TOKEN
+    volumes:
+      - name: deploy
+        path: /opt/deploy
+    commands:
+      - rm -rf /opt/deploy/content-service
+      - git clone --branch prod --single-branch --depth 1 https://$GITHUB_TOKEN@github.com/Poshagator/content-service.git /opt/deploy/content-service
+
+  - name: build
+    image: docker:latest
+    network_mode: internal
+    volumes:
+      - name: dockersock
+        path: /var/run/docker.sock
+      - name: deploy
+        path: /opt/deploy
+    environment:
+      DOCKER_HOST: unix:///var/run/docker.sock
+      REGISTRY_USERNAME:
+        from_secret: registry_username
+      REGISTRY_PASSWORD:
+        from_secret: registry_password
+    commands:
+      - cd /opt/deploy/content-service
+      - docker build -t registry.poshagator.ru/content-service:${DRONE_COMMIT_SHA:0:7} .
+      - echo "$REGISTRY_PASSWORD" | docker login registry.poshagator.ru --username "$REGISTRY_USERNAME" --password-stdin
+      - docker push registry.poshagator.ru/content-service:${DRONE_COMMIT_SHA:0:7}
+
+  - name: deploy
+    image: docker/compose:latest
+    network_mode: internal
+    volumes:
+      - name: dockersock
+        path: /var/run/docker.sock
+      - name: deploy
+        path: /opt/deploy
+    environment:
+      DOCKER_HOST: unix:///var/run/docker.sock
+      IMAGE_TAG: ${DRONE_COMMIT_SHA:0:7}
+    commands:
+      - cd /opt/deploy/content-service
+      - docker-compose up -d --force-recreate
+      - docker image prune -f
