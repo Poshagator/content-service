@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"github.com/poshagator/content-service/config"
+	"github.com/poshagator/content-service/internal/domain/delivery/grpc"
 	"github.com/poshagator/content-service/internal/domain/delivery/http"
 	"github.com/poshagator/content-service/internal/domain/repository/postgres"
 	"github.com/poshagator/content-service/internal/domain/usecase"
@@ -18,6 +19,7 @@ func New() *fx.App {
 			postgres.New(),
 			usecase.New(),
 			http.New(),
+			grpc.New(),
 		),
 		fx.Provide(
 			context.Background,

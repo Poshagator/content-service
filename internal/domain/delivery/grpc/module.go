@@ -1,12 +1,14 @@
 package grpc
 
 import (
+	"github.com/poshagator/content-service/internal/domain/delivery/grpc/schedule"
 	"go.uber.org/fx"
 )
 
 func New() fx.Option {
 	return fx.Module("grpc",
 		fx.Provide(
+			schedule.NewHandler,
 			NewServer,
 		),
 		fx.Invoke(

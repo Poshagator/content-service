@@ -10,16 +10,19 @@ import (
 	"google.golang.org/grpc/reflection"
 
 	"github.com/poshagator/content-service/config"
+	"github.com/poshagator/content-service/internal/domain/delivery/grpc/schedule"
 	"github.com/poshagator/content-service/internal/domain/usecase/edu"
 	"github.com/poshagator/content-service/internal/domain/usecase/product"
+	pkgSchedule "github.com/poshagator/content-service/pkg/api/grpc/schedule"
 )
 
 type Server struct {
-	logger         *zap.Logger
-	cfg            *config.ConfigModel
-	RPC            *grpc.Server
-	productUsecase *product.Usecase
-	eduUsecase     *edu.Usecase
+	logger          *zap.Logger
+	cfg             *config.ConfigModel
+	RPC             *grpc.Server
+	productUsecase  *product.Usecase
+	eduUsecase      *edu.Usecase
+	scheduleHandler *schedule.Handler
 }
 
 func NewServer(
@@ -27,14 +30,20 @@ func NewServer(
 	cfg *config.ConfigModel,
 	pu *product.Usecase,
 	eu *edu.Usecase,
+	sh *schedule.Handler,
 ) (*Server, error) {
-	return &Server{
-		logger:         logger,
-		cfg:            cfg,
-		RPC:            grpc.NewServer(),
-		productUsecase: pu,
-		eduUsecase:     eu,
-	}, nil
+	s := &Server{
+		logger:          logger,
+		cfg:             cfg,
+		RPC:             grpc.NewServer(),
+		productUsecase:  pu,
+		eduUsecase:      eu,
+		scheduleHandler: sh,
+	}
+
+	pkgSchedule.RegisterScheduleServiceServer(s.RPC, s.scheduleHandler)
+
+	return s, nil
 }
 
 func (s *Server) OnStart(_ context.Context) error {

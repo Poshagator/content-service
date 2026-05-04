@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package schedule;
+
+option go_package = "github.com/poshagator/content-service/pkg/api/grpc/schedule;schedule";
+
+service ScheduleService {
+  rpc SyncSchedule (SyncScheduleRequest) returns (SyncScheduleResponse);
+}
+
+message SyncScheduleRequest {
+  string university_id = 1;
+  string group_id = 2;
+  string parser_id = 3;
+  string payload_json = 4;
+}
+
+message SyncScheduleResponse {
+  bool success = 1;
+  string message = 2;
+}
