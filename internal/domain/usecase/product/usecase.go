@@ -1,4 +1,4 @@
-package usecase
+package product
 
 import (
 	"context"
@@ -9,53 +9,49 @@ import (
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 
-	"github.com/poshagator/content-service/internal/domain/entities"
-	"github.com/poshagator/content-service/internal/domain/repository/postgres"
+	"github.com/poshagator/content-service/internal/domain/entities/product"
+	repo "github.com/poshagator/content-service/internal/domain/repository/postgres/product"
 	"github.com/poshagator/content-service/pkg"
 )
 
-// -----------------------------------------------------------------------------
-// Use-case layer (business-logic façade)
-// -----------------------------------------------------------------------------
-
 type Usecase struct {
 	log  *zap.Logger
-	repo *postgres.Repository
+	repo *repo.Repository
 }
 
 func NewUsecase(
 	log *zap.Logger,
-	repo *postgres.Repository,
+	repo *repo.Repository,
 ) (*Usecase, error) {
 	return &Usecase{
-		log:  log.Named("usecase"),
+		log:  log.Named("usecase.product"),
 		repo: repo,
 	}, nil
 }
 
-func (u *Usecase) GetProduct(ctx context.Context, id uuid.UUID) (*entities.Product, error) {
-	product, err := u.repo.GetProduct(ctx, id)
+func (u *Usecase) GetProduct(ctx context.Context, id uuid.UUID) (*product.Product, error) {
+	p, err := u.repo.GetProduct(ctx, id)
 	if err != nil {
 		u.log.Error("failed to get product", zap.Error(err))
 		return nil, err
 	}
-	return product, nil
+	return p, nil
 }
 
-func (u *Usecase) CreateProduct(ctx context.Context, product *entities.Product) (*entities.Product, error) {
-	if err := u.repo.CreateProduct(ctx, product); err != nil {
+func (u *Usecase) CreateProduct(ctx context.Context, p *product.Product) (*product.Product, error) {
+	if err := u.repo.CreateProduct(ctx, p); err != nil {
 		u.log.Error("failed to create product", zap.Error(err))
 		return nil, err
 	}
-	return product, nil
+	return p, nil
 }
 
-func (u *Usecase) UpdateProduct(ctx context.Context, product *entities.Product) (*entities.Product, error) {
-	if err := u.repo.UpdateProduct(ctx, product); err != nil {
+func (u *Usecase) UpdateProduct(ctx context.Context, p *product.Product) (*product.Product, error) {
+	if err := u.repo.UpdateProduct(ctx, p); err != nil {
 		u.log.Error("failed to update product", zap.Error(err))
 		return nil, err
 	}
-	return product, nil
+	return p, nil
 }
 
 func (u *Usecase) DeleteProduct(ctx context.Context, id uuid.UUID) error {
@@ -66,7 +62,7 @@ func (u *Usecase) DeleteProduct(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
-func (u *Usecase) GetProducts(ctx context.Context, filialID uuid.UUID, size, page int) ([]entities.Product, error) {
+func (u *Usecase) GetProducts(ctx context.Context, filialID uuid.UUID, size, page int) ([]product.Product, error) {
 	products, err := u.repo.GetProducts(ctx, filialID, pkg.PaginationQuery(page, size))
 	if err != nil {
 		u.log.Error("failed to get products", zap.Error(err))
@@ -79,19 +75,18 @@ func (u *Usecase) GetProductsGrouped(
 	ctx context.Context,
 	filialID uuid.UUID,
 	limit, page int,
-) ([]entities.CategoryGroup, error) {
+) ([]product.CategoryGroup, error) {
 
 	products, err := u.repo.GetProducts(ctx, filialID, pkg.PaginationQuery(page, limit))
 	if err != nil {
 		return nil, err
 	}
 
-	// группируем в map[catID] → *CategoryGroup
-	groups := make(map[uuid.UUID]*entities.CategoryGroup)
+	groups := make(map[uuid.UUID]*product.CategoryGroup)
 	for _, p := range products {
 		g, ok := groups[p.CategoryID]
 		if !ok {
-			g = &entities.CategoryGroup{
+			g = &product.CategoryGroup{
 				CategoryID:    p.CategoryID,
 				CategoryName:  p.CategoryName,
 				CategoryImage: p.CategoryImage,
@@ -101,18 +96,17 @@ func (u *Usecase) GetProductsGrouped(
 		g.Products = append(g.Products, p)
 	}
 
-	// превращаем в срез, сохраняем порядок по products (они уже отсортированы SQL‑запросом)
-	out := make([]entities.CategoryGroup, 0, len(groups))
+	out := make([]product.CategoryGroup, 0, len(groups))
 	for _, p := range products {
 		if g, ok := groups[p.CategoryID]; ok {
 			out = appendUnique(out, *g)
-			delete(groups, p.CategoryID) // чтобы не дублировать
+			delete(groups, p.CategoryID)
 		}
 	}
 	return out, nil
 }
 
-func appendUnique(dst []entities.CategoryGroup, g entities.CategoryGroup) []entities.CategoryGroup {
+func appendUnique(dst []product.CategoryGroup, g product.CategoryGroup) []product.CategoryGroup {
 	for _, v := range dst {
 		if v.CategoryID == g.CategoryID {
 			return dst
@@ -121,13 +115,10 @@ func appendUnique(dst []entities.CategoryGroup, g entities.CategoryGroup) []enti
 	return append(dst, g)
 }
 
-// GetFilialModifiers возвращает группы модификаторов, используемые в продуктах филиала,
-// разложенные по UI‑типам (single/multi/counter/toggle). Поле g.Kind содержит "семейство"
-// (например size, volume и т.п.) — его можно использовать на фронте для слияния схожих групп.
 func (u *Usecase) GetFilialModifiers(
 	ctx context.Context,
 	filialID uuid.UUID,
-) (*entities.ModifierGroupsByType, error) {
+) (*product.ModifierGroupsByType, error) {
 
 	groups, err := u.repo.GetFilialModifiers(ctx, filialID)
 	if err != nil {
@@ -135,8 +126,7 @@ func (u *Usecase) GetFilialModifiers(
 		return nil, err
 	}
 
-	// Раскладываем по типам
-	out := &entities.ModifierGroupsByType{}
+	out := &product.ModifierGroupsByType{}
 	for _, g := range groups {
 		switch g.Type {
 		case "single":
@@ -150,7 +140,6 @@ func (u *Usecase) GetFilialModifiers(
 		}
 	}
 
-	// Стабильный порядок внутри каждого среза: Kind -> Name.
 	sort.Slice(out.Single, func(i, j int) bool { return lessGroup(out.Single[i], out.Single[j]) })
 	sort.Slice(out.Toggle, func(i, j int) bool { return lessGroup(out.Toggle[i], out.Toggle[j]) })
 	sort.Slice(out.Counter, func(i, j int) bool { return lessGroup(out.Counter[i], out.Counter[j]) })
@@ -159,8 +148,7 @@ func (u *Usecase) GetFilialModifiers(
 	return out, nil
 }
 
-// lessGroup сортирует сперва по Kind (пустые Kind идут в конец), затем по Name, затем по ID.
-func lessGroup(a, b entities.ProductModifierGroup) bool {
+func lessGroup(a, b product.ProductModifierGroup) bool {
 	ak := a.Kind
 	bk := b.Kind
 	if ak == "" && bk != "" {
@@ -178,20 +166,10 @@ func lessGroup(a, b entities.ProductModifierGroup) bool {
 	return a.ID.String() < b.ID.String()
 }
 
-// GroupByKind удобен, если на фронте надо слепить несколько групп (например "Размер" и "Объём")
-// в единый UI‑блок по Kind. Пока не используется в HTTP‑слое, но оставлен как вспомогательный.
-func GroupByKind(groups []entities.ProductModifierGroup) map[string][]entities.ProductModifierGroup {
-	out := make(map[string][]entities.ProductModifierGroup)
-	for _, g := range groups {
-		out[g.Kind] = append(out[g.Kind], g)
-	}
-	return out
-}
-
 func (u *Usecase) AttachModifierGroup(
 	ctx context.Context,
 	filialID uuid.UUID,
-	link *entities.ProductModifierGroupLink,
+	link *product.ProductModifierGroupLink,
 	headerPerms map[string]struct{},
 ) error {
 	if err := u.repo.AttachModifierGroup(ctx, filialID, link, headerPerms); err != nil {
@@ -201,24 +179,9 @@ func (u *Usecase) AttachModifierGroup(
 	return nil
 }
 
-// ModifierOptionInput — упрощённый входной DTO (см. http/server.go).
-type ModifierOptionInput struct {
-	ID            *uuid.UUID
-	Name          string
-	PriceDelta    *float64
-	WeightDelta   *float64
-	MaxQty        *int
-	PricePerUnit  *float64
-	WeightPerUnit *float64
-	Step          *float64
-	MinQty        *int
-	DefaultState  *bool
-	SortOrder     *int
-}
-
 func (u *Usecase) CreateModifierGroup(
 	ctx context.Context,
-	g *entities.ProductModifierGroup,
+	g *product.ProductModifierGroup,
 	headerPerms map[string]struct{},
 ) error {
 
@@ -235,7 +198,7 @@ func (u *Usecase) CreateModifierGroup(
 
 func (u *Usecase) UpdateModifierGroup(
 	ctx context.Context,
-	g *entities.ProductModifierGroup,
+	g *product.ProductModifierGroup,
 	headerPerms map[string]struct{},
 ) error {
 	if err := normalizeModifierGroup(g, false); err != nil {
@@ -262,7 +225,7 @@ func (u *Usecase) DeleteModifierGroup(
 	return nil
 }
 
-func normalizeModifierGroup(g *entities.ProductModifierGroup, requireOptions bool) error {
+func normalizeModifierGroup(g *product.ProductModifierGroup, requireOptions bool) error {
 	if g == nil {
 		return fmt.Errorf("nil group")
 	}
@@ -282,12 +245,10 @@ func normalizeModifierGroup(g *entities.ProductModifierGroup, requireOptions boo
 		return fmt.Errorf("at least 1 option required")
 	}
 
-	// проставим sort_order если 0; при этом сохраним относительный порядок
 	for i := range g.Options {
 		if g.Options[i].SortOrder == 0 {
 			g.Options[i].SortOrder = i + 1
 		}
-		// подчистим поля, не применимые к типу
 		switch g.Type {
 		case "single":
 			g.Options[i].MaxQty = nil
@@ -295,7 +256,6 @@ func normalizeModifierGroup(g *entities.ProductModifierGroup, requireOptions boo
 			g.Options[i].WeightPerUnit = nil
 			g.Options[i].Step = nil
 			g.Options[i].MinQty = nil
-			// DefaultState не используется
 			g.Options[i].DefaultState = nil
 		case "multi":
 			g.Options[i].PricePerUnit = nil
@@ -314,14 +274,13 @@ func normalizeModifierGroup(g *entities.ProductModifierGroup, requireOptions boo
 			g.Options[i].Step = nil
 			g.Options[i].MinQty = nil
 		}
-		g.Options[i].Type = g.Type // выравниваем
+		g.Options[i].Type = g.Type
 		g.Options[i].Name = strings.TrimSpace(g.Options[i].Name)
 		if g.Options[i].Name == "" {
 			return fmt.Errorf("empty option name at pos %d", i)
 		}
 	}
 
-	// стабильная сортировка по SortOrder, затем по Name
 	sort.SliceStable(g.Options, func(i, j int) bool {
 		if g.Options[i].SortOrder != g.Options[j].SortOrder {
 			return g.Options[i].SortOrder < g.Options[j].SortOrder

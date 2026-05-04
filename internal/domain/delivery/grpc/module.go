@@ -2,11 +2,10 @@ package grpc
 
 import (
 	"go.uber.org/fx"
-	"go.uber.org/zap"
 )
 
 func New() fx.Option {
-	return fx.Module("NewGRPCServer",
+	return fx.Module("grpc",
 		fx.Provide(
 			NewServer,
 		),
@@ -18,8 +17,5 @@ func New() fx.Option {
 				})
 			},
 		),
-		fx.Decorate(func(log *zap.Logger) *zap.Logger {
-			return log.Named("server")
-		}),
 	)
 }

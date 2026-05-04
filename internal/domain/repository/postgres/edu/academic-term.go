@@ -1,12 +1,12 @@
-package postgres
+package edu
 
 import (
 	"context"
-	"github.com/poshagator/content-service/internal/domain/entities"
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"go.uber.org/zap"
+	"github.com/poshagator/content-service/internal/domain/entities/edu"
 )
 
 const qGetAcademicTerm = `
@@ -18,7 +18,7 @@ where
     id = $1
 `
 
-func (r *Repository) GetAcademicTerm(ctx context.Context, id uuid.UUID) (*entities.AcademicTerm, error) {
+func (r *Repository) GetAcademicTerm(ctx context.Context, id uuid.UUID) (*edu.AcademicTerm, error) {
 	rows, err := r.db.Query(ctx, qGetAcademicTerm, id)
 	if err != nil {
 		r.log.Error("failed to get AcademicTerms", zap.Error(err))
@@ -26,7 +26,7 @@ func (r *Repository) GetAcademicTerm(ctx context.Context, id uuid.UUID) (*entiti
 	}
 	defer rows.Close()
 
-	AcademicTerms, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[entities.AcademicTermDao])
+	AcademicTerms, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[edu.AcademicTermDao])
 	if err != nil {
 		r.log.Error("failed to collect AcademicTerms", zap.Error(err))
 		return nil, err
@@ -43,7 +43,7 @@ values
 returning id
 `
 
-func (r *Repository) CreateAcademicTerms(ctx context.Context, AcademicTerms *entities.AcademicTerm) error {
+func (r *Repository) CreateAcademicTerms(ctx context.Context, AcademicTerms *edu.AcademicTerm) error {
 	err := r.db.QueryRow(ctx, qCreateAcademicTerms, AcademicTerms.FilialID, AcademicTerms.Name,
 		AcademicTerms.StartsOn, AcademicTerms.EndsOn, AcademicTerms.WeekStart).Scan(&AcademicTerms.ID)
 	if err != nil {
@@ -59,20 +59,20 @@ UPDATE public.academic_term
 SET
     institution_id = $2,
 --     CASE
---         WHEN permission = $4 THEN $2
---         ELSE institution_id
---     END,
-    name = $3,
---     CASE
---         WHEN permission = $4 THEN $3
---         ELSE name
---     END
-    starts_on = $4,
-    ends_on = $5,
-    week_start = $6
-WHERE id = $1`
+ --         WHEN permission = $4 THEN $2
+ --         ELSE institution_id
+ --     END,
+     name = $3,
+ --     CASE
+ --         WHEN permission = $4 THEN $3
+ --         ELSE name
+ --     END
+     starts_on = $4,
+     ends_on = $5,
+     week_start = $6
+ WHERE id = $1`
 
-func (r *Repository) UpdateAcademicTerms(ctx context.Context, AcademicTerms *entities.AcademicTerm) error {
+func (r *Repository) UpdateAcademicTerms(ctx context.Context, AcademicTerms *edu.AcademicTerm) error {
 	_, err := r.db.Exec(ctx, qUpdateAcademicTerms,
 		AcademicTerms.ID,
 		AcademicTerms.FilialID, AcademicTerms.Name, AcademicTerms.StartsOn,
@@ -106,7 +106,7 @@ where
     institution_id = $1
 `
 
-func (r *Repository) GetAcademicTerms(ctx context.Context, filialID uuid.UUID, sortQuery string) ([]entities.AcademicTerm, error) {
+func (r *Repository) GetAcademicTerms(ctx context.Context, filialID uuid.UUID, sortQuery string) ([]edu.AcademicTerm, error) {
 	fmt.Println(filialID, sortQuery)
 	rows, err := r.db.Query(ctx, qGetAcademicTerms+sortQuery, filialID)
 	if err != nil {
@@ -114,11 +114,11 @@ func (r *Repository) GetAcademicTerms(ctx context.Context, filialID uuid.UUID, s
 		return nil, err
 	}
 
-	AcademicTermsDAOs, err := pgx.CollectRows(rows, pgx.RowToStructByName[entities.AcademicTermDao])
+	AcademicTermsDAOs, err := pgx.CollectRows(rows, pgx.RowToStructByName[edu.AcademicTermDao])
 	if err != nil {
 		r.log.Error("failed to collect AcademicTermss", zap.Error(err))
 		return nil, err
 	}
 
-	return entities.AcademicTermsDao(AcademicTermsDAOs).ToAcademicTerms(), nil
+	return edu.AcademicTermsDao(AcademicTermsDAOs).ToAcademicTerms(), nil
 }

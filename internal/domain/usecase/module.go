@@ -2,17 +2,17 @@ package usecase
 
 import (
 	"go.uber.org/fx"
-	"go.uber.org/zap"
+
+	"github.com/poshagator/content-service/internal/domain/usecase/edu"
+	"github.com/poshagator/content-service/internal/domain/usecase/product"
 )
 
 func New() fx.Option {
 	return fx.Module(
 		"usecase",
 		fx.Provide(
-			NewUsecase,
+			edu.NewUsecase,
+			product.NewUsecase,
 		),
-		fx.Decorate(func(log *zap.Logger) *zap.Logger {
-			return log.Named("usecase")
-		}),
 	)
 }

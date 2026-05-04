@@ -1,33 +1,39 @@
 package grpc
 
 import (
-	"github.com/poshagator/content-service/config"
-	"github.com/poshagator/content-service/internal/domain/usecase"
-	//protos "github.com/poshagator/content-service/pkg/proto/auth/gen/go"
 	"context"
 	"fmt"
+	"net"
+
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
-	"net"
+
+	"github.com/poshagator/content-service/config"
+	"github.com/poshagator/content-service/internal/domain/usecase/edu"
+	"github.com/poshagator/content-service/internal/domain/usecase/product"
 )
 
-const statusOK = `OK`
-
 type Server struct {
-	logger  *zap.Logger
-	cfg     *config.ConfigModel
-	RPC     *grpc.Server
-	Usecase *usecase.Usecase
-	//protos.UnimplementedAuthServiceServer
+	logger         *zap.Logger
+	cfg            *config.ConfigModel
+	RPC            *grpc.Server
+	productUsecase *product.Usecase
+	eduUsecase     *edu.Usecase
 }
 
-func NewServer(logger *zap.Logger, cfg *config.ConfigModel, uc *usecase.Usecase) (*Server, error) {
+func NewServer(
+	logger *zap.Logger,
+	cfg *config.ConfigModel,
+	pu *product.Usecase,
+	eu *edu.Usecase,
+) (*Server, error) {
 	return &Server{
-		logger:  logger,
-		cfg:     cfg,
-		RPC:     grpc.NewServer(),
-		Usecase: uc,
+		logger:         logger,
+		cfg:            cfg,
+		RPC:            grpc.NewServer(),
+		productUsecase: pu,
+		eduUsecase:     eu,
 	}, nil
 }
 
@@ -37,8 +43,7 @@ func (s *Server) OnStart(_ context.Context) error {
 		s.logger.Error("failed to listen: ", zap.Error(err))
 		return fmt.Errorf("failed to listen:  %w", err)
 	}
-	//protos.RegisterAuthServiceServer(s.RPC, s)
-	reflection.Register(s.RPC) //по сети теперь видно все методы сети
+	reflection.Register(s.RPC)
 	go func() {
 		s.logger.Debug("grps serv started")
 		if err = s.RPC.Serve(lis); err != nil {
@@ -54,24 +59,3 @@ func (s *Server) OnStop(_ context.Context) error {
 	s.RPC.GracefulStop()
 	return nil
 }
-
-//пример
-//func (s *Server) GetUserToken(ctx context.Context, request *protos.GetUserTokenRequest) (*protos.GetUserTokenResponse, error) {
-//	token, err := s.Usecase.GetUserToken(
-//		ctx,
-//		convertToUserEntity(
-//			"",
-//			request.GetLogin(),
-//			nil,
-//			0,
-//			"",
-//		),
-//		request.GetPassword(),
-//	)
-//	if err != nil {
-//		return nil, err
-//	}
-//	return &protos.GetUserTokenResponse{
-//		Token:  token,
-//	}, nil
-//}

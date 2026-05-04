@@ -1,12 +1,12 @@
-package postgres
+package edu
 
 import (
 	"context"
-	"github.com/poshagator/content-service/internal/domain/entities"
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"go.uber.org/zap"
+	"github.com/poshagator/content-service/internal/domain/entities/edu"
 )
 
 const qGetEduGroup = `
@@ -18,7 +18,7 @@ where
     id = $1
 `
 
-func (r *Repository) GetEduGroup(ctx context.Context, id uuid.UUID) (*entities.EduGroup, error) {
+func (r *Repository) GetEduGroup(ctx context.Context, id uuid.UUID) (*edu.EduGroup, error) {
 	rows, err := r.db.Query(ctx, qGetEduGroup, id)
 	if err != nil {
 		r.log.Error("failed to get EduGroups", zap.Error(err))
@@ -26,7 +26,7 @@ func (r *Repository) GetEduGroup(ctx context.Context, id uuid.UUID) (*entities.E
 	}
 	defer rows.Close()
 
-	EduGroups, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[entities.EduGroupDao])
+	EduGroups, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[edu.EduGroupDao])
 	if err != nil {
 		r.log.Error("failed to collect EduGroups", zap.Error(err))
 		return nil, err
@@ -43,7 +43,7 @@ values
 returning id
 `
 
-func (r *Repository) CreateEduGroups(ctx context.Context, EduGroups *entities.EduGroup) error {
+func (r *Repository) CreateEduGroups(ctx context.Context, EduGroups *edu.EduGroup) error {
 	err := r.db.QueryRow(ctx, qCreateEduGroups, EduGroups.FilialID, EduGroups.Name, EduGroups.Permission).Scan(&EduGroups.ID)
 	if err != nil {
 		r.log.Error("failed to create EduGroups", zap.Error(err))
@@ -58,17 +58,17 @@ UPDATE public.edu_group
 SET
     institution_id = $2,
 --     CASE
---         WHEN permission = $4 THEN $2
---         ELSE institution_id
---     END,
-    name = $3
---     CASE
---         WHEN permission = $4 THEN $3
---         ELSE name
---     END
-WHERE id = $1`
+ --         WHEN permission = $4 THEN $2
+ --         ELSE institution_id
+ --     END,
+     name = $3
+ --     CASE
+ --         WHEN permission = $4 THEN $3
+ --         ELSE name
+ --     END
+ WHERE id = $1`
 
-func (r *Repository) UpdateEduGroups(ctx context.Context, EduGroups *entities.EduGroup) error {
+func (r *Repository) UpdateEduGroups(ctx context.Context, EduGroups *edu.EduGroup) error {
 	_, err := r.db.Exec(ctx, qUpdateEduGroups,
 		EduGroups.ID, EduGroups.FilialID, EduGroups.Name)
 	if err != nil {
@@ -100,7 +100,7 @@ where
     institution_id = $1
 `
 
-func (r *Repository) GetEduGroups(ctx context.Context, filialID uuid.UUID, sortQuery string) ([]entities.EduGroup, error) {
+func (r *Repository) GetEduGroups(ctx context.Context, filialID uuid.UUID, sortQuery string) ([]edu.EduGroup, error) {
 	fmt.Println(filialID, sortQuery)
 	rows, err := r.db.Query(ctx, qGetEduGroups+sortQuery, filialID)
 	if err != nil {
@@ -108,11 +108,11 @@ func (r *Repository) GetEduGroups(ctx context.Context, filialID uuid.UUID, sortQ
 		return nil, err
 	}
 
-	EduGroupsDAOs, err := pgx.CollectRows(rows, pgx.RowToStructByName[entities.EduGroupDao])
+	EduGroupsDAOs, err := pgx.CollectRows(rows, pgx.RowToStructByName[edu.EduGroupDao])
 	if err != nil {
 		r.log.Error("failed to collect EduGroupss", zap.Error(err))
 		return nil, err
 	}
 
-	return entities.EduGroupsDao(EduGroupsDAOs).ToEduGroups(), nil
+	return edu.EduGroupsDao(EduGroupsDAOs).ToEduGroups(), nil
 }

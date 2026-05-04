@@ -1,14 +1,14 @@
-package usecase
+package edu
 
 import (
 	"context"
-	"github.com/poshagator/content-service/internal/domain/entities"
+	"github.com/poshagator/content-service/internal/domain/entities/edu"
 	"github.com/poshagator/content-service/pkg"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
-func (u *Usecase) GetEduGroup(ctx context.Context, id uuid.UUID) (*entities.EduGroup, error) {
+func (u *Usecase) GetEduGroup(ctx context.Context, id uuid.UUID) (*edu.EduGroup, error) {
 	EduGroup, err := u.repo.GetEduGroup(ctx, id)
 	if err != nil {
 		u.log.Error("failed to get EduGroup", zap.Error(err))
@@ -18,7 +18,7 @@ func (u *Usecase) GetEduGroup(ctx context.Context, id uuid.UUID) (*entities.EduG
 	return EduGroup, nil
 }
 
-func (u *Usecase) CreateEduGroup(ctx context.Context, EduGroup *entities.EduGroup) (*entities.EduGroup, error) {
+func (u *Usecase) CreateEduGroup(ctx context.Context, EduGroup *edu.EduGroup) (*edu.EduGroup, error) {
 	err := u.repo.CreateEduGroups(ctx, EduGroup)
 	if err != nil {
 		u.log.Error("failed to create EduGroup", zap.Error(err))
@@ -28,7 +28,7 @@ func (u *Usecase) CreateEduGroup(ctx context.Context, EduGroup *entities.EduGrou
 	return EduGroup, nil
 }
 
-func (u *Usecase) UpdateEduGroup(ctx context.Context, EduGroup *entities.EduGroup) (*entities.EduGroup, error) {
+func (u *Usecase) UpdateEduGroup(ctx context.Context, EduGroup *edu.EduGroup) (*edu.EduGroup, error) {
 	err := u.repo.UpdateEduGroups(ctx, EduGroup)
 	if err != nil {
 		u.log.Error("failed to update EduGroup", zap.Error(err))
@@ -48,7 +48,7 @@ func (u *Usecase) DeleteEduGroup(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
-func (u *Usecase) GetEduGroups(ctx context.Context, filialID uuid.UUID, size, page int) ([]entities.EduGroup, error) {
+func (u *Usecase) GetEduGroups(ctx context.Context, filialID uuid.UUID, size, page int) ([]edu.EduGroup, error) {
 	EduGroups, err := u.repo.GetEduGroups(ctx, filialID, pkg.PaginationQuery(page, size))
 	if err != nil {
 		u.log.Error("failed to get EduGroups", zap.Error(err))
