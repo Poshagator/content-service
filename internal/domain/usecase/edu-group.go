@@ -1,0 +1,59 @@
+package usecase
+
+import (
+	"context"
+	"edu-service/internal/domain/entities"
+	"edu-service/pkg"
+	"github.com/google/uuid"
+	"go.uber.org/zap"
+)
+
+func (u *Usecase) GetEduGroup(ctx context.Context, id uuid.UUID) (*entities.EduGroup, error) {
+	EduGroup, err := u.repo.GetEduGroup(ctx, id)
+	if err != nil {
+		u.log.Error("failed to get EduGroup", zap.Error(err))
+		return nil, err
+	}
+
+	return EduGroup, nil
+}
+
+func (u *Usecase) CreateEduGroup(ctx context.Context, EduGroup *entities.EduGroup) (*entities.EduGroup, error) {
+	err := u.repo.CreateEduGroups(ctx, EduGroup)
+	if err != nil {
+		u.log.Error("failed to create EduGroup", zap.Error(err))
+		return nil, err
+	}
+
+	return EduGroup, nil
+}
+
+func (u *Usecase) UpdateEduGroup(ctx context.Context, EduGroup *entities.EduGroup) (*entities.EduGroup, error) {
+	err := u.repo.UpdateEduGroups(ctx, EduGroup)
+	if err != nil {
+		u.log.Error("failed to update EduGroup", zap.Error(err))
+		return nil, err
+	}
+
+	return EduGroup, nil
+}
+
+func (u *Usecase) DeleteEduGroup(ctx context.Context, id uuid.UUID) error {
+	err := u.repo.DeleteEduGroups(ctx, id)
+	if err != nil {
+		u.log.Error("failed to delete EduGroup", zap.Error(err))
+		return err
+	}
+
+	return nil
+}
+
+func (u *Usecase) GetEduGroups(ctx context.Context, filialID uuid.UUID, size, page int) ([]entities.EduGroup, error) {
+	EduGroups, err := u.repo.GetEduGroups(ctx, filialID, pkg.PaginationQuery(page, size))
+	if err != nil {
+		u.log.Error("failed to get EduGroups", zap.Error(err))
+		return nil, err
+	}
+
+	return EduGroups, nil
+}

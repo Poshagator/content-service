@@ -1,0 +1,70 @@
+version: "3.8"
+
+services:
+  product-db:
+    image: postgres:16-alpine
+    container_name: product-db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      retries: 5
+    networks:
+      - internal
+
+
+  product-migrate:
+    image: migrate/migrate:latest
+    depends_on:
+      - product-db
+    volumes:
+      - ./migrations:/migrations:ro
+    entrypoint: >
+      sh -c '
+        apk add --no-cache postgresql-client >/dev/null 2>&1 &&
+        echo Waiting for product-db… &&
+        until pg_isready -h product-db -U postgres; do sleep 1; done &&
+        echo DB is up — запускаем миграции &&
+        exec migrate -path /migrations \
+             -database "postgres://postgres:password@product-db:5432/postgres?sslmode=disable" up
+      '
+    networks:
+      - internal
+
+
+  content-service:
+    
+    image: registry.poshagator.ru/content-service:${IMAGE_TAG:-latest}
+    container_name: content-service
+    depends_on:
+      - product-migrate
+    volumes:
+      - ./config/config.yaml:/etc/content-service/config.yaml:ro
+      - ./migrations:/migrations:ro
+    networks:
+      - internal
+      - traefik_proxy
+    labels:
+      - "traefik.enable=true"
+
+      - "traefik.http.routers.product.rule=Host(`api.poshagator.ru`) && (Path(`/product`) || PathPrefix(`/product/`))"
+      - "traefik.http.routers.product.entrypoints=websecure"
+      - "traefik.http.routers.product.tls.certresolver=myresolver"
+      - "traefik.http.routers.product.middlewares=cors@file,api-auth@file"
+      - "traefik.http.services.product.loadbalancer.server.port=3000"
+
+      - "traefik.http.routers.product-options.rule=Host(`api.poshagator.ru`) && PathPrefix(`/product`) && Method(`OPTIONS`)"
+      - "traefik.http.routers.product-options.entrypoints=websecure"
+      - "traefik.http.routers.product-options.priority=1000"
+      - "traefik.http.routers.product-options.middlewares=cors@file"
+      - "traefik.http.routers.product-options.service=noop@internal"
+
+networks:
+  traefik_proxy:
+    external: true
+  internal:
+    external: true
