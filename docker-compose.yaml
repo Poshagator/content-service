@@ -1,9 +1,9 @@
 version: "3.8"
 
 services:
-  product-db:
+  content-db:
     image: postgres:16-alpine
-    container_name: product-db
+    container_name: content-db
     restart: always
     environment:
       POSTGRES_USER: postgres
@@ -17,20 +17,20 @@ services:
       - internal
 
 
-  product-migrate:
+  content-migrate:
     image: migrate/migrate:latest
     depends_on:
-      - product-db
+      - content-db
     volumes:
       - ./migrations:/migrations:ro
     entrypoint: >
       sh -c '
         apk add --no-cache postgresql-client >/dev/null 2>&1 &&
-        echo Waiting for product-db… &&
-        until pg_isready -h product-db -U postgres; do sleep 1; done &&
+        echo Waiting for content-db… &&
+        until pg_isready -h content-db -U postgres; do sleep 1; done &&
         echo DB is up — запускаем миграции &&
         exec migrate -path /migrations \
-             -database "postgres://postgres:password@product-db:5432/postgres?sslmode=disable" up
+             -database "postgres://postgres:password@content-db:5432/postgres?sslmode=disable" up
       '
     networks:
       - internal
@@ -41,7 +41,7 @@ services:
     image: registry.poshagator.ru/content-service:${IMAGE_TAG:-latest}
     container_name: content-service
     depends_on:
-      - product-migrate
+      - content-migrate
     volumes:
       - ./config/config.yaml:/etc/content-service/config.yaml:ro
       - ./migrations:/migrations:ro
@@ -51,17 +51,17 @@ services:
     labels:
       - "traefik.enable=true"
 
-      - "traefik.http.routers.product.rule=Host(`api.poshagator.ru`) && (Path(`/product`) || PathPrefix(`/product/`))"
-      - "traefik.http.routers.product.entrypoints=websecure"
-      - "traefik.http.routers.product.tls.certresolver=myresolver"
-      - "traefik.http.routers.product.middlewares=cors@file,api-auth@file"
-      - "traefik.http.services.product.loadbalancer.server.port=3000"
+      - "traefik.http.routers.content.rule=Host(`api.poshagator.ru`) && (Path(`/content`) || PathPrefix(`/content/`))"
+      - "traefik.http.routers.content.entrypoints=websecure"
+      - "traefik.http.routers.content.tls.certresolver=myresolver"
+      - "traefik.http.routers.content.middlewares=cors@file,api-auth@file"
+      - "traefik.http.services.content.loadbalancer.server.port=3000"
 
-      - "traefik.http.routers.product-options.rule=Host(`api.poshagator.ru`) && PathPrefix(`/product`) && Method(`OPTIONS`)"
-      - "traefik.http.routers.product-options.entrypoints=websecure"
-      - "traefik.http.routers.product-options.priority=1000"
-      - "traefik.http.routers.product-options.middlewares=cors@file"
-      - "traefik.http.routers.product-options.service=noop@internal"
+      - "traefik.http.routers.content-options.rule=Host(`api.poshagator.ru`) && PathPrefix(`/content`) && Method(`OPTIONS`)"
+      - "traefik.http.routers.content-options.entrypoints=websecure"
+      - "traefik.http.routers.content-options.priority=1000"
+      - "traefik.http.routers.content-options.middlewares=cors@file"
+      - "traefik.http.routers.content-options.service=noop@internal"
 
 networks:
   traefik_proxy:
