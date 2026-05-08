@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/poshagator/content-service/config"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 
@@ -14,19 +15,13 @@ import (
 func New() fx.Option {
 	return fx.Module("repo",
 		fx.Provide(
-			NewPoolManager,
-			func(pm *PoolManager, l *zap.Logger, cfg *config.ConfigModel, ctx context.Context) *edu.Repository {
-				return edu.NewRepository(l, cfg, ctx, pm.GetPool())
+			NewPool,
+			func(db *pgxpool.Pool, l *zap.Logger, cfg *config.ConfigModel, ctx context.Context) *edu.Repository {
+				return edu.NewRepository(l, cfg, ctx, db)
 			},
-			func(pm *PoolManager, l *zap.Logger, cfg *config.ConfigModel, ctx context.Context) *product.Repository {
-				return product.NewRepository(l, cfg, ctx, pm.GetPool())
+			func(db *pgxpool.Pool, l *zap.Logger, cfg *config.ConfigModel, ctx context.Context) *product.Repository {
+				return product.NewRepository(l, cfg, ctx, db)
 			},
 		),
-		fx.Invoke(func(lc fx.Lifecycle, pm *PoolManager) {
-			lc.Append(fx.Hook{
-				OnStart: pm.OnStart,
-				OnStop:  pm.OnStop,
-			})
-		}),
 	)
 }
