@@ -5,22 +5,16 @@ import (
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 	"net/http"
-	"strconv"
 )
 
 type SyncToPlannerRequest struct {
-	UserID     int64     `json:"userID"`
+	UserID     string    `json:"userID"`
 	GroupID    uuid.UUID `json:"groupID"`
 	TermID     uuid.UUID `json:"termID"`
 	ActivityID string    `json:"activityID"` // Optional, but provided by user
 }
 
 func (h *Handler) SyncToPlanner(c *gin.Context) {
-	// Debug: log all headers
-	for name, values := range c.Request.Header {
-		h.logger.Debug("Request header", zap.String("name", name), zap.Strings("values", values))
-	}
-
 	var req SyncToPlannerRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.logger.Error("failed to bind sync request", zap.Error(err))
@@ -28,24 +22,11 @@ func (h *Handler) SyncToPlanner(c *gin.Context) {
 		return
 	}
 
-	userIDStr := c.GetHeader("X-User-Id")
-	if userIDStr == "" {
-		userIDStr = c.GetHeader("X-App-Id")
-	}
-	if userIDStr == "" {
-		userIDStr = c.GetHeader("X-UserId")
+	if userID := plannerUserID(c); userID != "" {
+		req.UserID = userID
 	}
 
-	if userIDStr != "" {
-		uid, err := strconv.ParseInt(userIDStr, 10, 64)
-		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid user id header"})
-			return
-		}
-		req.UserID = uid
-	}
-
-	if req.UserID == 0 || req.GroupID == uuid.Nil || req.TermID == uuid.Nil {
+	if req.UserID == "" || req.GroupID == uuid.Nil || req.TermID == uuid.Nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "userID, groupID and termID are required"})
 		return
 	}
@@ -53,7 +34,7 @@ func (h *Handler) SyncToPlanner(c *gin.Context) {
 	err := h.usecase.SyncGroupScheduleToPlanner(c.Request.Context(), req.UserID, req.GroupID, req.TermID, req.ActivityID)
 	if err != nil {
 		h.logger.Error("failed to sync schedule to planner",
-			zap.Int64("userID", req.UserID),
+			zap.String("userID", req.UserID),
 			zap.String("groupID", req.GroupID.String()),
 			zap.Error(err))
 		h.renderError(c, err)
@@ -64,11 +45,6 @@ func (h *Handler) SyncToPlanner(c *gin.Context) {
 }
 
 func (h *Handler) UnsubscribeFromPlanner(c *gin.Context) {
-	// Debug: log all headers
-	for name, values := range c.Request.Header {
-		h.logger.Debug("Request header", zap.String("name", name), zap.Strings("values", values))
-	}
-
 	var req SyncToPlannerRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.logger.Error("failed to bind unsubscribe request", zap.Error(err))
@@ -76,24 +52,11 @@ func (h *Handler) UnsubscribeFromPlanner(c *gin.Context) {
 		return
 	}
 
-	userIDStr := c.GetHeader("X-User-Id")
-	if userIDStr == "" {
-		userIDStr = c.GetHeader("X-App-Id")
-	}
-	if userIDStr == "" {
-		userIDStr = c.GetHeader("X-UserId")
+	if userID := plannerUserID(c); userID != "" {
+		req.UserID = userID
 	}
 
-	if userIDStr != "" {
-		uid, err := strconv.ParseInt(userIDStr, 10, 64)
-		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid user id header"})
-			return
-		}
-		req.UserID = uid
-	}
-
-	if req.UserID == 0 || req.GroupID == uuid.Nil || req.TermID == uuid.Nil {
+	if req.UserID == "" || req.GroupID == uuid.Nil || req.TermID == uuid.Nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "userID, groupID and termID are required"})
 		return
 	}
@@ -101,11 +64,21 @@ func (h *Handler) UnsubscribeFromPlanner(c *gin.Context) {
 	err := h.usecase.UnsubscribeFromPlanner(c.Request.Context(), req.UserID, req.GroupID, req.TermID)
 	if err != nil {
 		h.logger.Error("failed to unsubscribe from planner",
-			zap.Int64("userID", req.UserID),
+			zap.String("userID", req.UserID),
 			zap.Error(err))
 		h.renderError(c, err)
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Unsubscribed successfully"})
+}
+
+func plannerUserID(c *gin.Context) string {
+	if userID := c.GetHeader("X-User-Id"); userID != "" {
+		return userID
+	}
+	if userID := c.GetHeader("X-App-Id"); userID != "" {
+		return userID
+	}
+	return c.GetHeader("X-UserId")
 }

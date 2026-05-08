@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.6.1
 // - protoc             v6.33.4
-// source: pkg/proto/planner/planner.proto
+// source: planner.proto
 
 package planner
 
@@ -359,5 +359,5 @@ var PlannerService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "pkg/proto/planner/planner.proto",
+	Metadata: "planner.proto",
 }

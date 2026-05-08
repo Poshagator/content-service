@@ -10,7 +10,7 @@ import (
 
 const StudyActivityID = "409f07cc-4a6a-41dd-b611-cba20d496ed4"
 
-func (u *Usecase) SyncGroupScheduleToPlanner(ctx context.Context, userID int64, groupID uuid.UUID, termID uuid.UUID, activityID string) error {
+func (u *Usecase) SyncGroupScheduleToPlanner(ctx context.Context, userID string, groupID uuid.UUID, termID uuid.UUID, activityID string) error {
 	// 1. Get Term info
 	term, err := u.repo.GetAcademicTerm(ctx, termID)
 	if err != nil {
@@ -114,7 +114,7 @@ func (u *Usecase) SyncGroupScheduleToPlanner(ctx context.Context, userID int64, 
 	return nil
 }
 
-func (u *Usecase) UnsubscribeFromPlanner(ctx context.Context, userID int64, groupID uuid.UUID, termID uuid.UUID) error {
+func (u *Usecase) UnsubscribeFromPlanner(ctx context.Context, userID string, groupID uuid.UUID, termID uuid.UUID) error {
 	// 1. Get Term info
 	term, err := u.repo.GetAcademicTerm(ctx, termID)
 	if err != nil {

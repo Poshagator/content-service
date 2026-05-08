@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        v6.33.4
-// source: pkg/proto/planner/planner.proto
+// source: planner.proto
 
 package planner
 
@@ -51,11 +51,11 @@ func (x SyncAction) String() string {
 }
 
 func (SyncAction) Descriptor() protoreflect.EnumDescriptor {
-	return file_pkg_proto_planner_planner_proto_enumTypes[0].Descriptor()
+	return file_planner_proto_enumTypes[0].Descriptor()
 }
 
 func (SyncAction) Type() protoreflect.EnumType {
-	return &file_pkg_proto_planner_planner_proto_enumTypes[0]
+	return &file_planner_proto_enumTypes[0]
 }
 
 func (x SyncAction) Number() protoreflect.EnumNumber {
@@ -64,7 +64,7 @@ func (x SyncAction) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use SyncAction.Descriptor instead.
 func (SyncAction) EnumDescriptor() ([]byte, []int) {
-	return file_pkg_proto_planner_planner_proto_rawDescGZIP(), []int{0}
+	return file_planner_proto_rawDescGZIP(), []int{0}
 }
 
 type GetUsersWithScheduleRequest struct {
@@ -75,7 +75,7 @@ type GetUsersWithScheduleRequest struct {
 
 func (x *GetUsersWithScheduleRequest) Reset() {
 	*x = GetUsersWithScheduleRequest{}
-	mi := &file_pkg_proto_planner_planner_proto_msgTypes[0]
+	mi := &file_planner_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -87,7 +87,7 @@ func (x *GetUsersWithScheduleRequest) String() string {
 func (*GetUsersWithScheduleRequest) ProtoMessage() {}
 
 func (x *GetUsersWithScheduleRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_proto_planner_planner_proto_msgTypes[0]
+	mi := &file_planner_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -100,7 +100,7 @@ func (x *GetUsersWithScheduleRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetUsersWithScheduleRequest.ProtoReflect.Descriptor instead.
 func (*GetUsersWithScheduleRequest) Descriptor() ([]byte, []int) {
-	return file_pkg_proto_planner_planner_proto_rawDescGZIP(), []int{0}
+	return file_planner_proto_rawDescGZIP(), []int{0}
 }
 
 type GetUsersWithScheduleResponse struct {
@@ -112,7 +112,7 @@ type GetUsersWithScheduleResponse struct {
 
 func (x *GetUsersWithScheduleResponse) Reset() {
 	*x = GetUsersWithScheduleResponse{}
-	mi := &file_pkg_proto_planner_planner_proto_msgTypes[1]
+	mi := &file_planner_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -124,7 +124,7 @@ func (x *GetUsersWithScheduleResponse) String() string {
 func (*GetUsersWithScheduleResponse) ProtoMessage() {}
 
 func (x *GetUsersWithScheduleResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_proto_planner_planner_proto_msgTypes[1]
+	mi := &file_planner_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -137,7 +137,7 @@ func (x *GetUsersWithScheduleResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetUsersWithScheduleResponse.ProtoReflect.Descriptor instead.
 func (*GetUsersWithScheduleResponse) Descriptor() ([]byte, []int) {
-	return file_pkg_proto_planner_planner_proto_rawDescGZIP(), []int{1}
+	return file_planner_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *GetUsersWithScheduleResponse) GetUserIds() []int64 {
@@ -158,7 +158,7 @@ type GetWeeklyScheduleRequest struct {
 
 func (x *GetWeeklyScheduleRequest) Reset() {
 	*x = GetWeeklyScheduleRequest{}
-	mi := &file_pkg_proto_planner_planner_proto_msgTypes[2]
+	mi := &file_planner_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -170,7 +170,7 @@ func (x *GetWeeklyScheduleRequest) String() string {
 func (*GetWeeklyScheduleRequest) ProtoMessage() {}
 
 func (x *GetWeeklyScheduleRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_proto_planner_planner_proto_msgTypes[2]
+	mi := &file_planner_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -183,7 +183,7 @@ func (x *GetWeeklyScheduleRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetWeeklyScheduleRequest.ProtoReflect.Descriptor instead.
 func (*GetWeeklyScheduleRequest) Descriptor() ([]byte, []int) {
-	return file_pkg_proto_planner_planner_proto_rawDescGZIP(), []int{2}
+	return file_planner_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *GetWeeklyScheduleRequest) GetUserId() int64 {
@@ -209,7 +209,7 @@ type GetWeeklyScheduleResponse struct {
 
 func (x *GetWeeklyScheduleResponse) Reset() {
 	*x = GetWeeklyScheduleResponse{}
-	mi := &file_pkg_proto_planner_planner_proto_msgTypes[3]
+	mi := &file_planner_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -221,7 +221,7 @@ func (x *GetWeeklyScheduleResponse) String() string {
 func (*GetWeeklyScheduleResponse) ProtoMessage() {}
 
 func (x *GetWeeklyScheduleResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_proto_planner_planner_proto_msgTypes[3]
+	mi := &file_planner_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -234,7 +234,7 @@ func (x *GetWeeklyScheduleResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetWeeklyScheduleResponse.ProtoReflect.Descriptor instead.
 func (*GetWeeklyScheduleResponse) Descriptor() ([]byte, []int) {
-	return file_pkg_proto_planner_planner_proto_rawDescGZIP(), []int{3}
+	return file_planner_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *GetWeeklyScheduleResponse) GetSchedule() *WeekSchedule {
@@ -255,7 +255,7 @@ type GetAllUsersPlansRequest struct {
 
 func (x *GetAllUsersPlansRequest) Reset() {
 	*x = GetAllUsersPlansRequest{}
-	mi := &file_pkg_proto_planner_planner_proto_msgTypes[4]
+	mi := &file_planner_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -267,7 +267,7 @@ func (x *GetAllUsersPlansRequest) String() string {
 func (*GetAllUsersPlansRequest) ProtoMessage() {}
 
 func (x *GetAllUsersPlansRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_proto_planner_planner_proto_msgTypes[4]
+	mi := &file_planner_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -280,7 +280,7 @@ func (x *GetAllUsersPlansRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetAllUsersPlansRequest.ProtoReflect.Descriptor instead.
 func (*GetAllUsersPlansRequest) Descriptor() ([]byte, []int) {
-	return file_pkg_proto_planner_planner_proto_rawDescGZIP(), []int{4}
+	return file_planner_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *GetAllUsersPlansRequest) GetWeekStartDate() string {
@@ -307,7 +307,7 @@ type GetAllUsersPlansResponse struct {
 
 func (x *GetAllUsersPlansResponse) Reset() {
 	*x = GetAllUsersPlansResponse{}
-	mi := &file_pkg_proto_planner_planner_proto_msgTypes[5]
+	mi := &file_planner_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -319,7 +319,7 @@ func (x *GetAllUsersPlansResponse) String() string {
 func (*GetAllUsersPlansResponse) ProtoMessage() {}
 
 func (x *GetAllUsersPlansResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_proto_planner_planner_proto_msgTypes[5]
+	mi := &file_planner_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -332,7 +332,7 @@ func (x *GetAllUsersPlansResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetAllUsersPlansResponse.ProtoReflect.Descriptor instead.
 func (*GetAllUsersPlansResponse) Descriptor() ([]byte, []int) {
-	return file_pkg_proto_planner_planner_proto_rawDescGZIP(), []int{5}
+	return file_planner_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *GetAllUsersPlansResponse) GetUserPlans() []*UserWeeklyPlan {
@@ -359,7 +359,7 @@ type Pagination struct {
 
 func (x *Pagination) Reset() {
 	*x = Pagination{}
-	mi := &file_pkg_proto_planner_planner_proto_msgTypes[6]
+	mi := &file_planner_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -371,7 +371,7 @@ func (x *Pagination) String() string {
 func (*Pagination) ProtoMessage() {}
 
 func (x *Pagination) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_proto_planner_planner_proto_msgTypes[6]
+	mi := &file_planner_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -384,7 +384,7 @@ func (x *Pagination) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Pagination.ProtoReflect.Descriptor instead.
 func (*Pagination) Descriptor() ([]byte, []int) {
-	return file_pkg_proto_planner_planner_proto_rawDescGZIP(), []int{6}
+	return file_planner_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *Pagination) GetLimit() int32 {
@@ -411,7 +411,7 @@ type UserWeeklyPlan struct {
 
 func (x *UserWeeklyPlan) Reset() {
 	*x = UserWeeklyPlan{}
-	mi := &file_pkg_proto_planner_planner_proto_msgTypes[7]
+	mi := &file_planner_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -423,7 +423,7 @@ func (x *UserWeeklyPlan) String() string {
 func (*UserWeeklyPlan) ProtoMessage() {}
 
 func (x *UserWeeklyPlan) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_proto_planner_planner_proto_msgTypes[7]
+	mi := &file_planner_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -436,7 +436,7 @@ func (x *UserWeeklyPlan) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UserWeeklyPlan.ProtoReflect.Descriptor instead.
 func (*UserWeeklyPlan) Descriptor() ([]byte, []int) {
-	return file_pkg_proto_planner_planner_proto_rawDescGZIP(), []int{7}
+	return file_planner_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *UserWeeklyPlan) GetUserId() int64 {
@@ -464,7 +464,7 @@ type WeekSchedule struct {
 
 func (x *WeekSchedule) Reset() {
 	*x = WeekSchedule{}
-	mi := &file_pkg_proto_planner_planner_proto_msgTypes[8]
+	mi := &file_planner_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -476,7 +476,7 @@ func (x *WeekSchedule) String() string {
 func (*WeekSchedule) ProtoMessage() {}
 
 func (x *WeekSchedule) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_proto_planner_planner_proto_msgTypes[8]
+	mi := &file_planner_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -489,7 +489,7 @@ func (x *WeekSchedule) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WeekSchedule.ProtoReflect.Descriptor instead.
 func (*WeekSchedule) Descriptor() ([]byte, []int) {
-	return file_pkg_proto_planner_planner_proto_rawDescGZIP(), []int{8}
+	return file_planner_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *WeekSchedule) GetStartDate() string {
@@ -524,7 +524,7 @@ type DaySchedule struct {
 
 func (x *DaySchedule) Reset() {
 	*x = DaySchedule{}
-	mi := &file_pkg_proto_planner_planner_proto_msgTypes[9]
+	mi := &file_planner_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -536,7 +536,7 @@ func (x *DaySchedule) String() string {
 func (*DaySchedule) ProtoMessage() {}
 
 func (x *DaySchedule) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_proto_planner_planner_proto_msgTypes[9]
+	mi := &file_planner_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -549,7 +549,7 @@ func (x *DaySchedule) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DaySchedule.ProtoReflect.Descriptor instead.
 func (*DaySchedule) Descriptor() ([]byte, []int) {
-	return file_pkg_proto_planner_planner_proto_rawDescGZIP(), []int{9}
+	return file_planner_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *DaySchedule) GetDate() string {
@@ -587,7 +587,7 @@ type Plan struct {
 
 func (x *Plan) Reset() {
 	*x = Plan{}
-	mi := &file_pkg_proto_planner_planner_proto_msgTypes[10]
+	mi := &file_planner_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -599,7 +599,7 @@ func (x *Plan) String() string {
 func (*Plan) ProtoMessage() {}
 
 func (x *Plan) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_proto_planner_planner_proto_msgTypes[10]
+	mi := &file_planner_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -612,7 +612,7 @@ func (x *Plan) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Plan.ProtoReflect.Descriptor instead.
 func (*Plan) Descriptor() ([]byte, []int) {
-	return file_pkg_proto_planner_planner_proto_rawDescGZIP(), []int{10}
+	return file_planner_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *Plan) GetId() string {
@@ -665,7 +665,7 @@ type GetAllActivitiesRequest struct {
 
 func (x *GetAllActivitiesRequest) Reset() {
 	*x = GetAllActivitiesRequest{}
-	mi := &file_pkg_proto_planner_planner_proto_msgTypes[11]
+	mi := &file_planner_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -677,7 +677,7 @@ func (x *GetAllActivitiesRequest) String() string {
 func (*GetAllActivitiesRequest) ProtoMessage() {}
 
 func (x *GetAllActivitiesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_proto_planner_planner_proto_msgTypes[11]
+	mi := &file_planner_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -690,7 +690,7 @@ func (x *GetAllActivitiesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetAllActivitiesRequest.ProtoReflect.Descriptor instead.
 func (*GetAllActivitiesRequest) Descriptor() ([]byte, []int) {
-	return file_pkg_proto_planner_planner_proto_rawDescGZIP(), []int{11}
+	return file_planner_proto_rawDescGZIP(), []int{11}
 }
 
 type GetAllActivitiesResponse struct {
@@ -702,7 +702,7 @@ type GetAllActivitiesResponse struct {
 
 func (x *GetAllActivitiesResponse) Reset() {
 	*x = GetAllActivitiesResponse{}
-	mi := &file_pkg_proto_planner_planner_proto_msgTypes[12]
+	mi := &file_planner_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -714,7 +714,7 @@ func (x *GetAllActivitiesResponse) String() string {
 func (*GetAllActivitiesResponse) ProtoMessage() {}
 
 func (x *GetAllActivitiesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_proto_planner_planner_proto_msgTypes[12]
+	mi := &file_planner_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -727,7 +727,7 @@ func (x *GetAllActivitiesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetAllActivitiesResponse.ProtoReflect.Descriptor instead.
 func (*GetAllActivitiesResponse) Descriptor() ([]byte, []int) {
-	return file_pkg_proto_planner_planner_proto_rawDescGZIP(), []int{12}
+	return file_planner_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *GetAllActivitiesResponse) GetActivities() []*Activity {
@@ -746,7 +746,7 @@ type GetUserActivitiesRequest struct {
 
 func (x *GetUserActivitiesRequest) Reset() {
 	*x = GetUserActivitiesRequest{}
-	mi := &file_pkg_proto_planner_planner_proto_msgTypes[13]
+	mi := &file_planner_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -758,7 +758,7 @@ func (x *GetUserActivitiesRequest) String() string {
 func (*GetUserActivitiesRequest) ProtoMessage() {}
 
 func (x *GetUserActivitiesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_proto_planner_planner_proto_msgTypes[13]
+	mi := &file_planner_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -771,7 +771,7 @@ func (x *GetUserActivitiesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetUserActivitiesRequest.ProtoReflect.Descriptor instead.
 func (*GetUserActivitiesRequest) Descriptor() ([]byte, []int) {
-	return file_pkg_proto_planner_planner_proto_rawDescGZIP(), []int{13}
+	return file_planner_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *GetUserActivitiesRequest) GetUserId() int64 {
@@ -790,7 +790,7 @@ type GetUserActivitiesResponse struct {
 
 func (x *GetUserActivitiesResponse) Reset() {
 	*x = GetUserActivitiesResponse{}
-	mi := &file_pkg_proto_planner_planner_proto_msgTypes[14]
+	mi := &file_planner_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -802,7 +802,7 @@ func (x *GetUserActivitiesResponse) String() string {
 func (*GetUserActivitiesResponse) ProtoMessage() {}
 
 func (x *GetUserActivitiesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_proto_planner_planner_proto_msgTypes[14]
+	mi := &file_planner_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -815,7 +815,7 @@ func (x *GetUserActivitiesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetUserActivitiesResponse.ProtoReflect.Descriptor instead.
 func (*GetUserActivitiesResponse) Descriptor() ([]byte, []int) {
-	return file_pkg_proto_planner_planner_proto_rawDescGZIP(), []int{14}
+	return file_planner_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *GetUserActivitiesResponse) GetActivities() []*Activity {
@@ -837,7 +837,7 @@ type Activity struct {
 
 func (x *Activity) Reset() {
 	*x = Activity{}
-	mi := &file_pkg_proto_planner_planner_proto_msgTypes[15]
+	mi := &file_planner_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -849,7 +849,7 @@ func (x *Activity) String() string {
 func (*Activity) ProtoMessage() {}
 
 func (x *Activity) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_proto_planner_planner_proto_msgTypes[15]
+	mi := &file_planner_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -862,7 +862,7 @@ func (x *Activity) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Activity.ProtoReflect.Descriptor instead.
 func (*Activity) Descriptor() ([]byte, []int) {
-	return file_pkg_proto_planner_planner_proto_rawDescGZIP(), []int{15}
+	return file_planner_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *Activity) GetId() string {
@@ -904,7 +904,7 @@ type SyncRecurringScheduleRequest struct {
 
 func (x *SyncRecurringScheduleRequest) Reset() {
 	*x = SyncRecurringScheduleRequest{}
-	mi := &file_pkg_proto_planner_planner_proto_msgTypes[16]
+	mi := &file_planner_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -916,7 +916,7 @@ func (x *SyncRecurringScheduleRequest) String() string {
 func (*SyncRecurringScheduleRequest) ProtoMessage() {}
 
 func (x *SyncRecurringScheduleRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_proto_planner_planner_proto_msgTypes[16]
+	mi := &file_planner_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -929,7 +929,7 @@ func (x *SyncRecurringScheduleRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SyncRecurringScheduleRequest.ProtoReflect.Descriptor instead.
 func (*SyncRecurringScheduleRequest) Descriptor() ([]byte, []int) {
-	return file_pkg_proto_planner_planner_proto_rawDescGZIP(), []int{16}
+	return file_planner_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *SyncRecurringScheduleRequest) GetUserId() int64 {
@@ -968,7 +968,7 @@ type RecurringEvent struct {
 
 func (x *RecurringEvent) Reset() {
 	*x = RecurringEvent{}
-	mi := &file_pkg_proto_planner_planner_proto_msgTypes[17]
+	mi := &file_planner_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -980,7 +980,7 @@ func (x *RecurringEvent) String() string {
 func (*RecurringEvent) ProtoMessage() {}
 
 func (x *RecurringEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_proto_planner_planner_proto_msgTypes[17]
+	mi := &file_planner_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -993,7 +993,7 @@ func (x *RecurringEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RecurringEvent.ProtoReflect.Descriptor instead.
 func (*RecurringEvent) Descriptor() ([]byte, []int) {
-	return file_pkg_proto_planner_planner_proto_rawDescGZIP(), []int{17}
+	return file_planner_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *RecurringEvent) GetExternalId() string {
@@ -1054,7 +1054,7 @@ type SyncRecurringScheduleResponse struct {
 
 func (x *SyncRecurringScheduleResponse) Reset() {
 	*x = SyncRecurringScheduleResponse{}
-	mi := &file_pkg_proto_planner_planner_proto_msgTypes[18]
+	mi := &file_planner_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1066,7 +1066,7 @@ func (x *SyncRecurringScheduleResponse) String() string {
 func (*SyncRecurringScheduleResponse) ProtoMessage() {}
 
 func (x *SyncRecurringScheduleResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_proto_planner_planner_proto_msgTypes[18]
+	mi := &file_planner_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1079,7 +1079,7 @@ func (x *SyncRecurringScheduleResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SyncRecurringScheduleResponse.ProtoReflect.Descriptor instead.
 func (*SyncRecurringScheduleResponse) Descriptor() ([]byte, []int) {
-	return file_pkg_proto_planner_planner_proto_rawDescGZIP(), []int{18}
+	return file_planner_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *SyncRecurringScheduleResponse) GetSyncedCount() int32 {
@@ -1091,7 +1091,7 @@ func (x *SyncRecurringScheduleResponse) GetSyncedCount() int32 {
 
 type SyncTasksRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        int64                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	Source        string                 `protobuf:"bytes,2,opt,name=source,proto3" json:"source,omitempty"` // "google_calendar", "university", etc.
 	Tasks         []*ExternalTask        `protobuf:"bytes,3,rep,name=tasks,proto3" json:"tasks,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -1100,7 +1100,7 @@ type SyncTasksRequest struct {
 
 func (x *SyncTasksRequest) Reset() {
 	*x = SyncTasksRequest{}
-	mi := &file_pkg_proto_planner_planner_proto_msgTypes[19]
+	mi := &file_planner_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1112,7 +1112,7 @@ func (x *SyncTasksRequest) String() string {
 func (*SyncTasksRequest) ProtoMessage() {}
 
 func (x *SyncTasksRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_proto_planner_planner_proto_msgTypes[19]
+	mi := &file_planner_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1125,14 +1125,14 @@ func (x *SyncTasksRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SyncTasksRequest.ProtoReflect.Descriptor instead.
 func (*SyncTasksRequest) Descriptor() ([]byte, []int) {
-	return file_pkg_proto_planner_planner_proto_rawDescGZIP(), []int{19}
+	return file_planner_proto_rawDescGZIP(), []int{19}
 }
 
-func (x *SyncTasksRequest) GetUserId() int64 {
+func (x *SyncTasksRequest) GetUserId() string {
 	if x != nil {
 		return x.UserId
 	}
-	return 0
+	return ""
 }
 
 func (x *SyncTasksRequest) GetSource() string {
@@ -1165,7 +1165,7 @@ type ExternalTask struct {
 
 func (x *ExternalTask) Reset() {
 	*x = ExternalTask{}
-	mi := &file_pkg_proto_planner_planner_proto_msgTypes[20]
+	mi := &file_planner_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1177,7 +1177,7 @@ func (x *ExternalTask) String() string {
 func (*ExternalTask) ProtoMessage() {}
 
 func (x *ExternalTask) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_proto_planner_planner_proto_msgTypes[20]
+	mi := &file_planner_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1190,7 +1190,7 @@ func (x *ExternalTask) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ExternalTask.ProtoReflect.Descriptor instead.
 func (*ExternalTask) Descriptor() ([]byte, []int) {
-	return file_pkg_proto_planner_planner_proto_rawDescGZIP(), []int{20}
+	return file_planner_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *ExternalTask) GetExternalId() string {
@@ -1258,7 +1258,7 @@ type SyncTasksResponse struct {
 
 func (x *SyncTasksResponse) Reset() {
 	*x = SyncTasksResponse{}
-	mi := &file_pkg_proto_planner_planner_proto_msgTypes[21]
+	mi := &file_planner_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1270,7 +1270,7 @@ func (x *SyncTasksResponse) String() string {
 func (*SyncTasksResponse) ProtoMessage() {}
 
 func (x *SyncTasksResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_proto_planner_planner_proto_msgTypes[21]
+	mi := &file_planner_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1283,7 +1283,7 @@ func (x *SyncTasksResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SyncTasksResponse.ProtoReflect.Descriptor instead.
 func (*SyncTasksResponse) Descriptor() ([]byte, []int) {
-	return file_pkg_proto_planner_planner_proto_rawDescGZIP(), []int{21}
+	return file_planner_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *SyncTasksResponse) GetSyncedCount() int32 {
@@ -1293,11 +1293,11 @@ func (x *SyncTasksResponse) GetSyncedCount() int32 {
 	return 0
 }
 
-var File_pkg_proto_planner_planner_proto protoreflect.FileDescriptor
+var File_planner_proto protoreflect.FileDescriptor
 
-const file_pkg_proto_planner_planner_proto_rawDesc = "" +
+const file_planner_proto_rawDesc = "" +
 	"\n" +
-	"\x1fpkg/proto/planner/planner.proto\x12\aplanner\"\x1d\n" +
+	"\rplanner.proto\x12\aplanner\"\x1d\n" +
 	"\x1bGetUsersWithScheduleRequest\"9\n" +
 	"\x1cGetUsersWithScheduleResponse\x12\x19\n" +
 	"\buser_ids\x18\x01 \x03(\x03R\auserIds\"G\n" +
@@ -1375,7 +1375,7 @@ const file_pkg_proto_planner_planner_proto_rawDesc = "" +
 	"\x1dSyncRecurringScheduleResponse\x12!\n" +
 	"\fsynced_count\x18\x01 \x01(\x05R\vsyncedCount\"p\n" +
 	"\x10SyncTasksRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\x03R\x06userId\x12\x16\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x16\n" +
 	"\x06source\x18\x02 \x01(\tR\x06source\x12+\n" +
 	"\x05tasks\x18\x03 \x03(\v2\x15.planner.ExternalTaskR\x05tasks\"\x83\x02\n" +
 	"\fExternalTask\x12\x1f\n" +
@@ -1406,20 +1406,20 @@ const file_pkg_proto_planner_planner_proto_rawDesc = "" +
 	"\tSyncTasks\x12\x19.planner.SyncTasksRequest\x1a\x1a.planner.SyncTasksResponseBEZCgithub.com/poshagator/content-service/pkg/proto/planner/gen;plannerb\x06proto3"
 
 var (
-	file_pkg_proto_planner_planner_proto_rawDescOnce sync.Once
-	file_pkg_proto_planner_planner_proto_rawDescData []byte
+	file_planner_proto_rawDescOnce sync.Once
+	file_planner_proto_rawDescData []byte
 )
 
-func file_pkg_proto_planner_planner_proto_rawDescGZIP() []byte {
-	file_pkg_proto_planner_planner_proto_rawDescOnce.Do(func() {
-		file_pkg_proto_planner_planner_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_pkg_proto_planner_planner_proto_rawDesc), len(file_pkg_proto_planner_planner_proto_rawDesc)))
+func file_planner_proto_rawDescGZIP() []byte {
+	file_planner_proto_rawDescOnce.Do(func() {
+		file_planner_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_planner_proto_rawDesc), len(file_planner_proto_rawDesc)))
 	})
-	return file_pkg_proto_planner_planner_proto_rawDescData
+	return file_planner_proto_rawDescData
 }
 
-var file_pkg_proto_planner_planner_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_pkg_proto_planner_planner_proto_msgTypes = make([]protoimpl.MessageInfo, 22)
-var file_pkg_proto_planner_planner_proto_goTypes = []any{
+var file_planner_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_planner_proto_msgTypes = make([]protoimpl.MessageInfo, 22)
+var file_planner_proto_goTypes = []any{
 	(SyncAction)(0),                       // 0: planner.SyncAction
 	(*GetUsersWithScheduleRequest)(nil),   // 1: planner.GetUsersWithScheduleRequest
 	(*GetUsersWithScheduleResponse)(nil),  // 2: planner.GetUsersWithScheduleResponse
@@ -1444,7 +1444,7 @@ var file_pkg_proto_planner_planner_proto_goTypes = []any{
 	(*ExternalTask)(nil),                  // 21: planner.ExternalTask
 	(*SyncTasksResponse)(nil),             // 22: planner.SyncTasksResponse
 }
-var file_pkg_proto_planner_planner_proto_depIdxs = []int32{
+var file_planner_proto_depIdxs = []int32{
 	9,  // 0: planner.GetWeeklyScheduleResponse.schedule:type_name -> planner.WeekSchedule
 	7,  // 1: planner.GetAllUsersPlansRequest.pagination:type_name -> planner.Pagination
 	8,  // 2: planner.GetAllUsersPlansResponse.user_plans:type_name -> planner.UserWeeklyPlan
@@ -1477,27 +1477,27 @@ var file_pkg_proto_planner_planner_proto_depIdxs = []int32{
 	0,  // [0:11] is the sub-list for field type_name
 }
 
-func init() { file_pkg_proto_planner_planner_proto_init() }
-func file_pkg_proto_planner_planner_proto_init() {
-	if File_pkg_proto_planner_planner_proto != nil {
+func init() { file_planner_proto_init() }
+func file_planner_proto_init() {
+	if File_planner_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pkg_proto_planner_planner_proto_rawDesc), len(file_pkg_proto_planner_planner_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_planner_proto_rawDesc), len(file_planner_proto_rawDesc)),
 			NumEnums:      1,
 			NumMessages:   22,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_pkg_proto_planner_planner_proto_goTypes,
-		DependencyIndexes: file_pkg_proto_planner_planner_proto_depIdxs,
-		EnumInfos:         file_pkg_proto_planner_planner_proto_enumTypes,
-		MessageInfos:      file_pkg_proto_planner_planner_proto_msgTypes,
+		GoTypes:           file_planner_proto_goTypes,
+		DependencyIndexes: file_planner_proto_depIdxs,
+		EnumInfos:         file_planner_proto_enumTypes,
+		MessageInfos:      file_planner_proto_msgTypes,
 	}.Build()
-	File_pkg_proto_planner_planner_proto = out.File
-	file_pkg_proto_planner_planner_proto_goTypes = nil
-	file_pkg_proto_planner_planner_proto_depIdxs = nil
+	File_planner_proto = out.File
+	file_planner_proto_goTypes = nil
+	file_planner_proto_depIdxs = nil
 }

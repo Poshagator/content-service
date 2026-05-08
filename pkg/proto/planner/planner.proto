@@ -127,7 +127,7 @@ message SyncRecurringScheduleResponse {
 }
 
 message SyncTasksRequest {
-  int64 user_id = 1;
+  string user_id = 1;
   string source = 2; // "google_calendar", "university", etc.
   repeated ExternalTask tasks = 3;
 }
