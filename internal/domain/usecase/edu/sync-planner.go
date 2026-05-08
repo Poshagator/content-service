@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/poshagator/content-service/pkg/proto/planner/gen"
+	"go.uber.org/zap"
 	"time"
 )
 
 const StudyActivityID = "409f07cc-4a6a-41dd-b611-cba20d496ed4"
+const plannerSourceUniversity = "university"
 
 func (u *Usecase) SyncGroupScheduleToPlanner(ctx context.Context, userID string, groupID uuid.UUID, termID uuid.UUID, activityID string) error {
 	// 1. Get Term info
@@ -36,6 +38,20 @@ func (u *Usecase) SyncGroupScheduleToPlanner(ctx context.Context, userID string,
 		start = time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 	}
 	end := term.EndsOn
+	totalGenerated := 0
+	totalSynced := 0
+	batchNumber := 0
+
+	u.log.Info("planner sync started",
+		zap.String("userID", userID),
+		zap.String("groupID", groupID.String()),
+		zap.String("termID", termID.String()),
+		zap.Time("termStartsOn", term.StartsOn),
+		zap.Time("termEndsOn", term.EndsOn),
+		zap.Time("syncStartsOn", start),
+		zap.Int("timetableEntries", len(timetable)),
+		zap.String("activityID", activityID),
+	)
 
 	for d := start; d.Before(end) || d.Equal(end); d = d.AddDate(0, 0, 1) {
 		weekday := int(d.Weekday())
@@ -83,33 +99,39 @@ func (u *Usecase) SyncGroupScheduleToPlanner(ctx context.Context, userID string,
 				ActivityId:  activityID,
 				Action:      planner.SyncAction_SYNC_ACTION_UPSERT,
 			})
+			totalGenerated++
 		}
 
 		// Batch send if too many tasks to avoid gRPC message size limits
 		if len(tasks) >= 100 {
-			_, err = u.plannerClient.SyncTasks(ctx, &planner.SyncTasksRequest{
-				UserId: userID,
-				Source: "university",
-				Tasks:  tasks,
-			})
+			batchNumber++
+			sent, err := u.sendPlannerTaskBatch(ctx, userID, plannerSourceUniversity, tasks, "sync", batchNumber)
 			if err != nil {
 				return fmt.Errorf("sync tasks batch: %w", err)
 			}
+			totalSynced += sent
 			tasks = nil
 		}
 	}
 
 	// Final batch
 	if len(tasks) > 0 {
-		_, err = u.plannerClient.SyncTasks(ctx, &planner.SyncTasksRequest{
-			UserId: userID,
-			Source: "university",
-			Tasks:  tasks,
-		})
+		batchNumber++
+		sent, err := u.sendPlannerTaskBatch(ctx, userID, plannerSourceUniversity, tasks, "sync", batchNumber)
 		if err != nil {
 			return fmt.Errorf("sync tasks final batch: %w", err)
 		}
+		totalSynced += sent
 	}
+
+	u.log.Info("planner sync finished",
+		zap.String("userID", userID),
+		zap.String("groupID", groupID.String()),
+		zap.String("termID", termID.String()),
+		zap.Int("generatedTasks", totalGenerated),
+		zap.Int("syncedTasks", totalSynced),
+		zap.Int("batches", batchNumber),
+	)
 
 	return nil
 }
@@ -129,6 +151,18 @@ func (u *Usecase) UnsubscribeFromPlanner(ctx context.Context, userID string, gro
 
 	// 3. Prepare tasks for deletion
 	var tasks []*planner.ExternalTask
+	totalGenerated := 0
+	totalSynced := 0
+	batchNumber := 0
+
+	u.log.Info("planner unsubscribe started",
+		zap.String("userID", userID),
+		zap.String("groupID", groupID.String()),
+		zap.String("termID", termID.String()),
+		zap.Time("termStartsOn", term.StartsOn),
+		zap.Time("termEndsOn", term.EndsOn),
+		zap.Int("timetableEntries", len(timetable)),
+	)
 
 	// Delete every task that could have been created for this subscription.
 	for d := term.StartsOn; d.Before(term.EndsOn) || d.Equal(term.EndsOn); d = d.AddDate(0, 0, 1) {
@@ -155,33 +189,85 @@ func (u *Usecase) UnsubscribeFromPlanner(ctx context.Context, userID string, gro
 				ExternalId: fmt.Sprintf("%s_%s", entry.ID, d.Format("2006-01-02")),
 				Action:     planner.SyncAction_SYNC_ACTION_DELETE,
 			})
+			totalGenerated++
 		}
 
 		if len(tasks) >= 100 {
-			_, err = u.plannerClient.SyncTasks(ctx, &planner.SyncTasksRequest{
-				UserId: userID,
-				Source: "university",
-				Tasks:  tasks,
-			})
+			batchNumber++
+			sent, err := u.sendPlannerTaskBatch(ctx, userID, plannerSourceUniversity, tasks, "unsubscribe", batchNumber)
 			if err != nil {
 				return fmt.Errorf("unsubscribe tasks batch: %w", err)
 			}
+			totalSynced += sent
 			tasks = nil
 		}
 	}
 
 	if len(tasks) > 0 {
-		_, err = u.plannerClient.SyncTasks(ctx, &planner.SyncTasksRequest{
-			UserId: userID,
-			Source: "university",
-			Tasks:  tasks,
-		})
+		batchNumber++
+		sent, err := u.sendPlannerTaskBatch(ctx, userID, plannerSourceUniversity, tasks, "unsubscribe", batchNumber)
 		if err != nil {
 			return fmt.Errorf("unsubscribe tasks final batch: %w", err)
 		}
+		totalSynced += sent
 	}
 
+	u.log.Info("planner unsubscribe finished",
+		zap.String("userID", userID),
+		zap.String("groupID", groupID.String()),
+		zap.String("termID", termID.String()),
+		zap.Int("generatedTasks", totalGenerated),
+		zap.Int("syncedTasks", totalSynced),
+		zap.Int("batches", batchNumber),
+	)
+
 	return nil
+}
+
+func (u *Usecase) sendPlannerTaskBatch(ctx context.Context, userID, source string, tasks []*planner.ExternalTask, operation string, batchNumber int) (int, error) {
+	if len(tasks) == 0 {
+		return 0, nil
+	}
+
+	firstDate := tasks[0].Date
+	lastDate := tasks[len(tasks)-1].Date
+	u.log.Info("planner sync batch sending",
+		zap.String("operation", operation),
+		zap.Int("batch", batchNumber),
+		zap.String("userID", userID),
+		zap.String("source", source),
+		zap.Int("tasks", len(tasks)),
+		zap.String("firstDate", firstDate),
+		zap.String("lastDate", lastDate),
+	)
+
+	resp, err := u.plannerClient.SyncTasks(ctx, &planner.SyncTasksRequest{
+		UserId: userID,
+		Source: source,
+		Tasks:  tasks,
+	})
+	if err != nil {
+		u.log.Error("planner sync batch failed",
+			zap.String("operation", operation),
+			zap.Int("batch", batchNumber),
+			zap.String("userID", userID),
+			zap.String("source", source),
+			zap.Int("tasks", len(tasks)),
+			zap.Error(err),
+		)
+		return 0, err
+	}
+
+	u.log.Info("planner sync batch sent",
+		zap.String("operation", operation),
+		zap.Int("batch", batchNumber),
+		zap.String("userID", userID),
+		zap.String("source", source),
+		zap.Int("tasks", len(tasks)),
+		zap.Int32("plannerSyncedCount", resp.GetSyncedCount()),
+	)
+
+	return int(resp.GetSyncedCount()), nil
 }
 
 func isoWeekDiff(from, to time.Time) int {
