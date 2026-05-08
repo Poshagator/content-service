@@ -11,7 +11,7 @@ import (
 
 const qGetAcademicTerm = `
 SELECT 
-    id, institution_id as filial_id, name, starts_on, ends_on, week_start
+    id, filial_id, name, starts_on, ends_on, week_start
 from
     public.academic_term
 where
@@ -37,7 +37,7 @@ func (r *Repository) GetAcademicTerm(ctx context.Context, id uuid.UUID) (*edu.Ac
 
 const qCreateAcademicTerms = `
 insert into 
-    public.academic_term (institution_id, name, starts_on, ends_on, week_start)
+    public.academic_term (filial_id, name, starts_on, ends_on, week_start)
 values
 	($1, $2, $3, $4, $5)
 returning id
@@ -57,7 +57,7 @@ func (r *Repository) CreateAcademicTerms(ctx context.Context, AcademicTerms *edu
 const qUpdateAcademicTerms = `
 UPDATE public.academic_term
 SET
-    institution_id = $2,
+    filial_id = $2,
     name = $3,
     starts_on = $4,
     ends_on = $5,
@@ -91,11 +91,11 @@ func (r *Repository) DeleteAcademicTerms(ctx context.Context, id uuid.UUID) erro
 
 const qGetAcademicTerms = `
 select 
-    id, institution_id as filial_id, name, starts_on, ends_on, week_start
+    id, filial_id, name, starts_on, ends_on, week_start
 from
     public.academic_term
 where 
-    institution_id = $1
+    filial_id = $1
 `
 
 func (r *Repository) GetAcademicTerms(ctx context.Context, filialID uuid.UUID, sortQuery string) ([]edu.AcademicTerm, error) {

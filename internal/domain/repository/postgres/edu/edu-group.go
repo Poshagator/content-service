@@ -11,7 +11,7 @@ import (
 
 const qGetEduGroup = `
 SELECT 
-    id, institution_id as filial_id, name
+    id, filial_id, name
 from
     public.edu_group
 where
@@ -37,7 +37,7 @@ func (r *Repository) GetEduGroup(ctx context.Context, id uuid.UUID) (*edu.EduGro
 
 const qCreateEduGroups = `
 insert into 
-    public.edu_group (institution_id, name)
+    public.edu_group (filial_id, name)
 values
 	($1, $2)
 returning id
@@ -56,7 +56,7 @@ func (r *Repository) CreateEduGroups(ctx context.Context, EduGroups *edu.EduGrou
 const qUpdateEduGroups = `
 UPDATE public.edu_group
 SET
-    institution_id = $2,
+    filial_id = $2,
     name = $3
  WHERE id = $1`
 
@@ -85,11 +85,11 @@ func (r *Repository) DeleteEduGroups(ctx context.Context, id uuid.UUID) error {
 
 const qGetEduGroups = `
 select 
-    id, institution_id as filial_id, name
+    id, filial_id, name
 from
     public.edu_group
 where 
-    institution_id = $1
+    filial_id = $1
 `
 
 func (r *Repository) GetEduGroups(ctx context.Context, filialID uuid.UUID, sortQuery string) ([]edu.EduGroup, error) {
