@@ -74,37 +74,37 @@ func (h *Handler) SyncSchedule(ctx context.Context, req *schedule.SyncScheduleRe
 		sourceIDs = payload.SourceIDs
 	}
 
-	stats, err := suruz.Sync(ctx, suruz.Config{
-		APIBase:      payload.APIBase,
-		DSN:          h.postgresDSN(),
-		FilialID:     filialID,
-		SourceIDs:    sourceIDs,
-		SourceParam:  payload.SourceParam,
-		LimitSources: payload.LimitSources,
-		Timeout:      60 * time.Second,
-		TermName:     payload.TermName,
-		Logger:       h.log,
-	})
-	if err != nil {
-		h.log.Error("failed to sync Suruz schedule", zap.Error(err))
-		return &schedule.SyncScheduleResponse{
-			Success: false,
-			Message: err.Error(),
-		}, nil
-	}
+	// Run sync in background to avoid gRPC timeouts
+	go func() {
+		// Use background context since the request context will be canceled
+		bgCtx := context.Background()
+		stats, err := suruz.Sync(bgCtx, suruz.Config{
+			APIBase:      payload.APIBase,
+			DSN:          h.postgresDSN(),
+			FilialID:     filialID,
+			SourceIDs:    sourceIDs,
+			SourceParam:  payload.SourceParam,
+			LimitSources: payload.LimitSources,
+			Timeout:      60 * time.Second,
+			TermName:     payload.TermName,
+			Logger:       h.log,
+		})
+		if err != nil {
+			h.log.Error("background Suruz sync failed", zap.Error(err))
+			return
+		}
+
+		h.log.Info("background Suruz sync complete",
+			zap.Int("groups", stats.Groups),
+			zap.Int("teachers", stats.Teachers),
+			zap.Int("schedules", stats.Schedules),
+			zap.Int("events", stats.Events),
+		)
+	}()
 
 	return &schedule.SyncScheduleResponse{
 		Success: true,
-		Message: fmt.Sprintf(
-			"Suruz sync complete: groups=%d teachers=%d schedules=%d fetch_errors=%d events=%d entries_created=%d entries_existing=%d",
-			stats.Groups,
-			stats.Teachers,
-			stats.Schedules,
-			stats.FetchErrors,
-			stats.Events,
-			stats.EntriesCreated,
-			stats.EntriesExisting,
-		),
+		Message: "Suruz sync started in background. Check service logs for progress.",
 	}, nil
 }
 

@@ -67,22 +67,6 @@ func Sync(ctx context.Context, cfg Config) (Stats, error) {
 		return Stats{}, fmt.Errorf("build schedule sources: no schedule sources found in Suruz groups response")
 	}
 
-	var schedules []fetchedSchedule
-	stats := Stats{}
-	total := len(sources)
-	for idx, source := range sources {
-		if cfg.Logger != nil && (idx == 0 || (idx+1)%100 == 0 || idx+1 == total) {
-			cfg.Logger.Info("fetching schedules", zap.Int("current", idx+1), zap.Int("total", total))
-		}
-
-		schedule, err := fetchSchedule(ctx, client, cfg.APIBase, source)
-		if err != nil {
-			stats.FetchErrors++
-			continue
-		}
-		schedules = append(schedules, fetchedSchedule{Source: source, Data: schedule})
-	}
-
 	db, err := pgxpool.New(ctx, cfg.DSN)
 	if err != nil {
 		return Stats{}, fmt.Errorf("connect postgres: %w", err)
@@ -99,11 +83,35 @@ func Sync(ctx context.Context, cfg Config) (Stats, error) {
 		teachers: make(map[string]uuid.UUID),
 	}
 
-	stats, err = imp.importData(ctx, meta, schedules, stats)
+	// 1. Import Metadata (Groups & Teachers) first so they are visible immediately
+	teacherByID, groupByID, subgroupToGroupID, err := imp.importMetadata(ctx, meta, &stats)
 	if err != nil {
-		return Stats{}, fmt.Errorf("import Suruz data: %w", err)
+		return stats, fmt.Errorf("import metadata: %w", err)
 	}
-	stats.Schedules = len(schedules)
+
+	// 2. Fetch and Import schedules one by one
+	total := len(sources)
+	for idx, source := range sources {
+		if cfg.Logger != nil && (idx == 0 || (idx+1)%100 == 0 || idx+1 == total) {
+			cfg.Logger.Info("fetching and importing schedule", zap.Int("current", idx+1), zap.Int("total", total), zap.String("source", source.Name))
+		}
+
+		schedule, err := fetchSchedule(ctx, client, cfg.APIBase, source)
+		if err != nil {
+			stats.FetchErrors++
+			continue
+		}
+		stats.Schedules++
+
+		// Import this single schedule in its own transaction
+		if err := imp.importSingleSchedule(ctx, source, schedule, &stats, groupByID, teacherByID, subgroupToGroupID); err != nil {
+			if cfg.Logger != nil {
+				cfg.Logger.Warn("failed to import single schedule", zap.String("source", source.Name), zap.Error(err))
+			}
+			continue
+		}
+	}
+
 	return stats, nil
 }
 
@@ -313,15 +321,15 @@ func buildSources(meta groupsData, explicitIDs, sourceParam string) []scheduleSo
 	return sources
 }
 
-func (i *importer) importData(ctx context.Context, meta groupsData, schedules []fetchedSchedule, stats Stats) (Stats, error) {
+func (i *importer) importMetadata(ctx context.Context, meta groupsData, stats *Stats) (map[int]string, map[int]string, map[int]int, error) {
 	tx, err := i.db.Begin(ctx)
 	if err != nil {
-		return Stats{}, err
+		return nil, nil, nil, err
 	}
 	defer tx.Rollback(ctx)
 
 	if _, err := tx.Exec(ctx, `INSERT INTO public.filial (id) VALUES ($1) ON CONFLICT (id) DO NOTHING`, i.filialID); err != nil {
-		return Stats{}, err
+		return nil, nil, nil, err
 	}
 
 	for _, group := range meta.Groups {
@@ -330,7 +338,7 @@ func (i *importer) importData(ctx context.Context, meta groupsData, schedules []
 			continue
 		}
 		if _, err := i.ensureGroup(ctx, tx, name); err != nil {
-			return Stats{}, err
+			return nil, nil, nil, err
 		}
 		stats.Groups++
 	}
@@ -343,7 +351,7 @@ func (i *importer) importData(ctx context.Context, meta groupsData, schedules []
 		}
 		teacherByID[teacher.ID] = name
 		if _, err := i.ensureTeacher(ctx, tx, name, teacher.Position); err != nil {
-			return Stats{}, err
+			return nil, nil, nil, err
 		}
 		stats.Teachers++
 	}
@@ -352,6 +360,7 @@ func (i *importer) importData(ctx context.Context, meta groupsData, schedules []
 	for _, group := range meta.Groups {
 		groupByID[group.ID] = group.displayName()
 	}
+
 	subgroupToGroupID := make(map[int]int)
 	for _, subgroup := range meta.Subgroups {
 		if subgroup.ID > 0 && subgroup.GroupID > 0 {
@@ -370,45 +379,55 @@ func (i *importer) importData(ctx context.Context, meta groupsData, schedules []
 		}
 	}
 
-	minDate, maxDate := eventDateRange(schedules)
+	if err := tx.Commit(ctx); err != nil {
+		return nil, nil, nil, err
+	}
+
+	return teacherByID, groupByID, subgroupToGroupID, nil
+}
+
+func (i *importer) importSingleSchedule(ctx context.Context, source scheduleSource, data scheduleData, stats *Stats, groupByID map[int]string, teacherByID map[int]string, subgroupToGroupID map[int]int) error {
+	tx, err := i.db.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	minDate, maxDate := singleScheduleDateRange(data)
 	termID, err := i.ensureTerm(ctx, tx, minDate, maxDate)
 	if err != nil {
-		return Stats{}, err
+		return err
 	}
 
-	for _, schedule := range schedules {
-		eventGroups := make(map[int64][]int)
-		for _, link := range schedule.Data.EventGroups {
-			eventGroups[link.EventID] = append(eventGroups[link.EventID], link.GroupID)
-		}
-		eventTeachers := make(map[int64][]int)
-		for _, link := range schedule.Data.EventTeachers {
-			eventTeachers[link.EventID] = append(eventTeachers[link.EventID], link.TeacherID)
-		}
+	eventGroups := make(map[int64][]int)
+	for _, link := range data.EventGroups {
+		eventGroups[link.EventID] = append(eventGroups[link.EventID], link.GroupID)
+	}
+	eventTeachers := make(map[int64][]int)
+	for _, link := range data.EventTeachers {
+		eventTeachers[link.EventID] = append(eventTeachers[link.EventID], link.TeacherID)
+	}
 
-		for _, event := range schedule.Data.Events {
-			groups := eventGroups[event.ID]
-			if len(groups) == 0 {
-				if schedule.Source.Param == "group_id" {
-					groups = []int{schedule.Source.ID}
-				} else if groupID := subgroupToGroupID[schedule.Source.ID]; groupID > 0 {
-					groups = []int{groupID}
-				}
+	for _, event := range data.Events {
+		groups := eventGroups[event.ID]
+		if len(groups) == 0 {
+			if source.Param == "group_id" {
+				groups = []int{source.ID}
+			} else if groupID := subgroupToGroupID[source.ID]; groupID > 0 {
+				groups = []int{groupID}
 			}
-			created, existing, err := i.importEvent(ctx, tx, termID, event, groups, eventTeachers[event.ID], groupByID, teacherByID)
-			if err != nil {
-				return Stats{}, err
-			}
-			stats.Events++
-			stats.EntriesCreated += created
-			stats.EntriesExisting += existing
 		}
+
+		created, existing, err := i.importEvent(ctx, tx, termID, event, groups, eventTeachers[event.ID], groupByID, teacherByID)
+		if err != nil {
+			return err
+		}
+		stats.Events++
+		stats.EntriesCreated += created
+		stats.EntriesExisting += existing
 	}
 
-	if err := tx.Commit(ctx); err != nil {
-		return Stats{}, err
-	}
-	return stats, nil
+	return tx.Commit(ctx)
 }
 
 func (i *importer) importEvent(ctx context.Context, tx pgx.Tx, termID uuid.UUID, event suruzEvent, groupIDs []int, teacherIDs []int, groupByID map[int]string, teacherByID map[int]string) (int, int, error) {
@@ -675,21 +694,19 @@ RETURNING id
 	return true, err
 }
 
-func eventDateRange(schedules []fetchedSchedule) (time.Time, time.Time) {
+func singleScheduleDateRange(data scheduleData) (time.Time, time.Time) {
 	var minDate time.Time
 	var maxDate time.Time
-	for _, schedule := range schedules {
-		for _, event := range schedule.Data.Events {
-			date, err := parseAPIDate(event.StartDateISO)
-			if err != nil {
-				continue
-			}
-			if minDate.IsZero() || date.Before(minDate) {
-				minDate = date
-			}
-			if maxDate.IsZero() || date.After(maxDate) {
-				maxDate = date
-			}
+	for _, event := range data.Events {
+		date, err := parseAPIDate(event.StartDateISO)
+		if err != nil {
+			continue
+		}
+		if minDate.IsZero() || date.Before(minDate) {
+			minDate = date
+		}
+		if maxDate.IsZero() || date.After(maxDate) {
+			maxDate = date
 		}
 	}
 	return minDate, maxDate
