@@ -63,6 +63,13 @@ services:
       - "traefik.http.routers.content-options.middlewares=cors@file"
       - "traefik.http.routers.content-options.service=noop@internal"
 
+      - "traefik.http.routers.content-grpc.rule=Host(`content.grpc.poshagator.ru`)"
+      - "traefik.http.routers.content-grpc.entrypoints=websecure"
+      - "traefik.http.routers.content-grpc.tls.certresolver=myresolver"
+      - "traefik.http.routers.content-grpc.service=content-grpc"
+      - "traefik.http.services.content-grpc.loadbalancer.server.port=50051"
+      - "traefik.http.services.content-grpc.loadbalancer.server.scheme=h2c"
+
 networks:
   traefik_proxy:
     external: true
