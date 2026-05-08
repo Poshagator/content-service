@@ -1,0 +1,153 @@
+syntax = "proto3";
+
+package planner;
+
+option go_package = "github.com/poshagator/content-service/pkg/proto/planner/gen;planner";
+
+service PlannerService {
+  // Возвращает список user_id, у которых есть расписание/планировщик
+  rpc GetUsersWithSchedule(GetUsersWithScheduleRequest) returns (GetUsersWithScheduleResponse);
+
+  // Получить недельное расписание по user_id и дате
+  rpc GetWeeklySchedule(GetWeeklyScheduleRequest) returns (GetWeeklyScheduleResponse);
+
+  // Получить планы всех пользователей на определенную неделю с пагинацией
+  rpc GetAllUsersPlans(GetAllUsersPlansRequest) returns (GetAllUsersPlansResponse);
+
+  // Получить все доступные активности
+  rpc GetAllActivities(GetAllActivitiesRequest) returns (GetAllActivitiesResponse);
+
+  // Получить активности пользователя по user_id
+  rpc GetUserActivities(GetUserActivitiesRequest) returns (GetUserActivitiesResponse);
+
+  // Синхронизация регулярных расписаний (например, из ВУЗа)
+  rpc SyncRecurringSchedule(SyncRecurringScheduleRequest) returns (SyncRecurringScheduleResponse);
+
+  // Синхронизация конкретных переопределяющих задач и исключений (например, из календаря или отмена пары)
+  rpc SyncTasks(SyncTasksRequest) returns (SyncTasksResponse);
+}
+
+message GetUsersWithScheduleRequest {}
+
+message GetUsersWithScheduleResponse {
+  repeated int64 user_ids = 1;
+}
+
+message GetWeeklyScheduleRequest {
+  int64 user_id = 1;
+  // Формат даты: YYYY-MM-DD. Сервис вычислит неделю, содержащую эту дату.
+  string date = 2; 
+}
+
+message GetWeeklyScheduleResponse {
+    WeekSchedule schedule = 1;
+}
+
+message GetAllUsersPlansRequest {
+  // Формат даты: YYYY-MM-DD. Сервис вычислит неделю, содержащую эту дату.
+  string week_start_date = 1;
+  Pagination pagination = 2;
+}
+
+message GetAllUsersPlansResponse {
+  repeated UserWeeklyPlan user_plans = 1;
+  int64 total_count = 2;
+}
+
+message Pagination {
+    int32 limit = 1;
+    int32 offset = 2;
+}
+
+message UserWeeklyPlan {
+    int64 user_id = 1;
+    WeekSchedule schedule = 2;
+}
+
+message WeekSchedule {
+    string start_date = 1; // YYYY-MM-DD
+    string end_date = 2;   // YYYY-MM-DD
+    repeated DaySchedule days = 3;
+}
+
+message DaySchedule {
+    string date = 1; // YYYY-MM-DD
+    string day_of_week = 2; // например, "Понедельник", "Вторник"
+    repeated Plan plans = 3;
+}
+
+message Plan {
+    string id = 1;
+    string title = 2;
+    string description = 3;
+    string start_time = 4; // HH:MM
+    string end_time = 5;   // HH:MM
+    bool is_completed = 6;
+}
+
+message GetAllActivitiesRequest {}
+
+message GetAllActivitiesResponse {
+    repeated Activity activities = 1;
+}
+
+message GetUserActivitiesRequest {
+    int64 user_id = 1;
+}
+
+message GetUserActivitiesResponse {
+    repeated Activity activities = 1;
+}
+
+message Activity {
+    string id = 1;
+    string name = 2;
+    string category = 3;
+    string icon_url = 4;
+}
+
+message SyncRecurringScheduleRequest {
+  int64 user_id = 1;
+  string source = 2; // "university", etc.
+  repeated RecurringEvent events = 3; 
+}
+
+message RecurringEvent {
+  string external_id = 1; 
+  int32 weekday = 2;      // 1 - Monday, 7 - Sunday
+  string start_time = 3;  // "10:00"
+  string end_time = 4;    // "11:30"
+  string title = 5;       
+  string activity_id = 6; // UUID of the activity
+  bool is_deleted = 7;    // true id the event was deleted
+}
+
+message SyncRecurringScheduleResponse {
+  int32 synced_count = 1;
+}
+
+message SyncTasksRequest {
+  int64 user_id = 1;
+  string source = 2; // "google_calendar", "university", etc.
+  repeated ExternalTask tasks = 3;
+}
+
+message ExternalTask {
+  string external_id = 1;
+  string date = 2;        // "YYYY-MM-DD"
+  string start_time = 3;  // "HH:MM" 
+  string end_time = 4;    // "HH:MM"
+  string title = 5;
+  string description = 6;
+  string activity_id = 7; // UUID
+  SyncAction action = 8;
+}
+
+enum SyncAction {
+  SYNC_ACTION_UPSERT = 0;
+  SYNC_ACTION_DELETE = 1;
+}
+
+message SyncTasksResponse {
+  int32 synced_count = 1;
+}

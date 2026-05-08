@@ -6,6 +6,7 @@ type ConfigModel struct {
 	Postgres  PostgresConfig `yaml:"Postgres"`
 	JWT       JWTConfig      `yaml:"JWT"`
 	OrderGRPC OrderGRPC      `yaml:"OrderGRPC"`
+	PlannerGRPC PlannerGRPC  `yaml:"PlannerGRPC"`
 }
 
 type PostgresConfig struct {
@@ -34,6 +35,11 @@ type JWTConfig struct {
 }
 
 type OrderGRPC struct {
+	Host string `yaml:"host"`
+	Port string `yaml:"port"`
+}
+
+type PlannerGRPC struct {
 	Host string `yaml:"host"`
 	Port string `yaml:"port"`
 }

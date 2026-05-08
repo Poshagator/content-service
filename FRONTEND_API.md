@@ -118,3 +118,53 @@ Retrieve a list of academic terms for a filial.
 ```bash
 curl "https://api.poshagator.ru/content/edu/term/list?filialID=4888f1e4-5916-45ef-a485-0d0381872968&page=1&perPage=10"
 ```
+
+---
+
+## 4. Sync & Planner Integration
+
+### Sync Schedule to Planner
+Synchronize the group timetable into the user's personal planner.
+
+**Endpoint:** `POST /sync-to-planner`
+
+**Headers:**
+- `X-User-Id` (int): ID of the user.
+
+**Body:**
+```json
+{
+  "groupID": "UUID",
+  "termID": "UUID"
+}
+```
+
+### Unsubscribe from Planner
+Remove all university lessons for a specific group/term from the planner.
+
+**Endpoint:** `POST /unsubscribe-from-planner`
+
+**Headers:**
+- `X-User-Id` (int): ID of the user.
+
+**Body:**
+```json
+{
+  "groupID": "UUID",
+  "termID": "UUID"
+}
+```
+
+### Update Group
+Edit group details.
+
+**Endpoint:** `POST /group/update`
+
+**Body:**
+```json
+{
+  "id": "UUID",
+  "filial_id": "UUID",
+  "name": "New Name"
+}
+```

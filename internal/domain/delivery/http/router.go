@@ -33,4 +33,6 @@ func (s *Server) createController() {
 
 	// Timetable
 	edu.GET("/timetable/list", s.eduHandler.GetTimetable)
+	edu.POST("/sync-to-planner", s.eduHandler.SyncToPlanner)
+	edu.POST("/unsubscribe-from-planner", s.eduHandler.UnsubscribeFromPlanner)
 }

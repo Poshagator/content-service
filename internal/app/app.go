@@ -7,6 +7,7 @@ import (
 	"github.com/poshagator/content-service/internal/domain/delivery/http"
 	"github.com/poshagator/content-service/internal/domain/repository/postgres"
 	"github.com/poshagator/content-service/internal/domain/usecase"
+	infra "github.com/poshagator/content-service/internal/infrastructure/grpc"
 
 	"go.uber.org/fx"
 	"go.uber.org/fx/fxevent"
@@ -20,6 +21,7 @@ func New() *fx.App {
 			usecase.New(),
 			http.New(),
 			grpc.New(),
+			infra.New(),
 		),
 		fx.Provide(
 			context.Background,
