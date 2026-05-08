@@ -8,7 +8,7 @@ import (
 
 	"github.com/poshagator/content-service/config"
 	"github.com/poshagator/content-service/internal/domain/usecase/edu"
-	"github.com/poshagator/content-service/pkg/proto/schedule"
+	"github.com/poshagator/content-service/pkg/proto/schedule/gen"
 	"github.com/poshagator/content-service/pkg/suruz"
 	"go.uber.org/zap"
 )

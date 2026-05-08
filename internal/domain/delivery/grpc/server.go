@@ -13,7 +13,7 @@ import (
 	"github.com/poshagator/content-service/internal/domain/delivery/grpc/schedule"
 	"github.com/poshagator/content-service/internal/domain/usecase/edu"
 	"github.com/poshagator/content-service/internal/domain/usecase/product"
-	pkgSchedule "github.com/poshagator/content-service/pkg/proto/gen/schedule"
+	pkgSchedule "github.com/poshagator/content-service/pkg/proto/schedule/gen"
 )
 
 type Server struct {

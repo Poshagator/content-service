@@ -155,7 +155,7 @@ const file_schedule_proto_rawDesc = "" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage2`\n" +
 	"\x0fScheduleService\x12M\n" +
-	"\fSyncSchedule\x12\x1d.schedule.SyncScheduleRequest\x1a\x1e.schedule.SyncScheduleResponseBLZgithub.com/poshagator/content-service/pkg/proto/schedule;scheduleb\x06proto3"
+	"\fSyncSchedule\x12\x1d.schedule.SyncScheduleRequest\x1a\x1e.schedule.SyncScheduleResponseBPZgithub.com/poshagator/content-service/pkg/proto/schedule/gen;scheduleb\x06proto3"
 
 var (
 	file_schedule_proto_rawDescOnce sync.Once

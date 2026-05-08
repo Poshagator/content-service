@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package schedule;
 
-option go_package = "github.com/poshagator/content-service/pkg/proto/schedule;schedule";
+option go_package = "github.com/poshagator/content-service/pkg/proto/schedule/gen;schedule";
 
 service ScheduleService {
   rpc SyncSchedule (SyncScheduleRequest) returns (SyncScheduleResponse);
