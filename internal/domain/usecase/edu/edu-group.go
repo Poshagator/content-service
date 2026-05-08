@@ -57,3 +57,14 @@ func (u *Usecase) GetEduGroups(ctx context.Context, filialID uuid.UUID, size, pa
 
 	return EduGroups, nil
 }
+
+func (u *Usecase) SearchEduGroups(ctx context.Context, filialID uuid.UUID, name string, limit int) ([]edu.EduGroup, error) {
+	if limit <= 0 {
+		limit = 20
+	}
+	if limit > 100 {
+		limit = 100
+	}
+
+	return u.repo.SearchEduGroups(ctx, filialID, name, limit)
+}

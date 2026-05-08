@@ -18,6 +18,7 @@ func (s *Server) createController() {
 
 	// Edu Groups
 	edu.GET("/group/list", s.eduHandler.ListEduGroups)
+	edu.GET("/group/search", s.eduHandler.SearchEduGroups)
 	edu.GET("/group/get", s.eduHandler.GetEduGroup)
 	edu.POST("/group/create", s.eduHandler.CreateEduGroup)
 	edu.POST("/group/update", s.eduHandler.UpdateEduGroup)

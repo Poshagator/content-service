@@ -17,7 +17,7 @@ SELECT
     te.week_type,
     s.name as subject_name,
     trim(concat_ws(' ', p.last_name, p.first_name, p.middle_name)) as teacher_name,
-    COALESCE(r.room_number, r.name) as room_name
+    COALESCE(r.room_number, r.name, '') as room_name
 FROM 
     public.timetable_entry te
 JOIN 

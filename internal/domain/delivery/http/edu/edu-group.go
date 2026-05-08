@@ -111,3 +111,24 @@ func (h *Handler) ListEduGroups(c *gin.Context) {
 
 	c.JSON(http.StatusOK, eduGroups)
 }
+
+func (h *Handler) SearchEduGroups(c *gin.Context) {
+	filialID, err := uuid.Parse(c.Query("filialID"))
+	if err != nil {
+		h.logger.Error("failed to parse filialID", zap.Error(err))
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid filialID"})
+		return
+	}
+
+	name := c.Query("name")
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
+
+	eduGroups, err := h.usecase.SearchEduGroups(c, filialID, name, limit)
+	if err != nil {
+		h.logger.Error("failed to search eduGroups", zap.Error(err))
+		h.renderError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, eduGroups)
+}

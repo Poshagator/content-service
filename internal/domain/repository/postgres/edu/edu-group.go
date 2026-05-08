@@ -108,3 +108,31 @@ func (r *Repository) GetEduGroups(ctx context.Context, filialID uuid.UUID, sortQ
 
 	return edu.EduGroupsDao(EduGroupsDAOs).ToEduGroups(), nil
 }
+
+const qSearchEduGroups = `
+select 
+    id, filial_id, name
+from
+    public.edu_group
+where 
+    filial_id = $1 AND name ILIKE $2
+order by name
+limit $3
+`
+
+func (r *Repository) SearchEduGroups(ctx context.Context, filialID uuid.UUID, name string, limit int) ([]edu.EduGroup, error) {
+	rows, err := r.db.Query(ctx, qSearchEduGroups, filialID, "%"+name+"%", limit)
+	if err != nil {
+		r.log.Error("failed to search edu groups", zap.Error(err))
+		return nil, err
+	}
+	defer rows.Close()
+
+	daos, err := pgx.CollectRows(rows, pgx.RowToStructByName[edu.EduGroupDao])
+	if err != nil {
+		r.log.Error("failed to collect searched edu groups", zap.Error(err))
+		return nil, err
+	}
+
+	return edu.EduGroupsDao(daos).ToEduGroups(), nil
+}
