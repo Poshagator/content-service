@@ -7,7 +7,7 @@ import (
 	"github.com/poshagator/content-service/internal/domain/delivery/http"
 	"github.com/poshagator/content-service/internal/domain/repository/postgres"
 	"github.com/poshagator/content-service/internal/domain/usecase"
-	infra "github.com/poshagator/content-service/internal/infrastructure/grpc"
+	infra "github.com/poshagator/content-service/pkg/infrastructure/grpc"
 
 	"go.uber.org/fx"
 	"go.uber.org/fx/fxevent"

@@ -15,6 +15,5 @@ GRPC:
   port: "50051"
 
 PlannerGRPC:
-  host: "planner-service"
-  port: "50051"
+  host: "planner.grpc.poshagator.ru:443"
 
