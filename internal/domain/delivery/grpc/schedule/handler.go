@@ -83,6 +83,7 @@ func (h *Handler) SyncSchedule(ctx context.Context, req *schedule.SyncScheduleRe
 		LimitSources: payload.LimitSources,
 		Timeout:      60 * time.Second,
 		TermName:     payload.TermName,
+		Logger:       h.log,
 	})
 	if err != nil {
 		h.log.Error("failed to sync Suruz schedule", zap.Error(err))

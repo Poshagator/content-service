@@ -13,6 +13,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"go.uber.org/zap"
 )
 
 const (
@@ -31,6 +32,7 @@ type Config struct {
 	LimitSources int
 	Timeout      time.Duration
 	TermName     string
+	Logger       *zap.Logger
 }
 
 type Stats struct {
@@ -67,7 +69,12 @@ func Sync(ctx context.Context, cfg Config) (Stats, error) {
 
 	var schedules []fetchedSchedule
 	stats := Stats{}
-	for _, source := range sources {
+	total := len(sources)
+	for idx, source := range sources {
+		if cfg.Logger != nil && (idx == 0 || (idx+1)%100 == 0 || idx+1 == total) {
+			cfg.Logger.Info("fetching schedules", zap.Int("current", idx+1), zap.Int("total", total))
+		}
+
 		schedule, err := fetchSchedule(ctx, client, cfg.APIBase, source)
 		if err != nil {
 			stats.FetchErrors++
@@ -319,7 +326,7 @@ func (i *importer) importData(ctx context.Context, meta groupsData, schedules []
 
 	for _, group := range meta.Groups {
 		name := group.displayName()
-		if name == "" {
+		if name == "" || isExamGroupName(name) {
 			continue
 		}
 		if _, err := i.ensureGroup(ctx, tx, name); err != nil {
@@ -457,6 +464,15 @@ func (i *importer) importEvent(ctx context.Context, tx pgx.Tx, termID uuid.UUID,
 		if groupName == "" {
 			continue
 		}
+
+		// Try to extract real group name from exam group name
+		if isExamGroupName(groupName) {
+			realName := extractRealGroupName(groupName)
+			if realName != "" {
+				groupName = realName
+			}
+		}
+
 		groupID, err := i.ensureGroup(ctx, tx, groupName)
 		if err != nil {
 			return 0, 0, err
@@ -473,6 +489,25 @@ func (i *importer) importEvent(ctx context.Context, tx pgx.Tx, termID uuid.UUID,
 	}
 
 	return created, existing, nil
+}
+
+func isExamGroupName(name string) bool {
+	return strings.Contains(name, "(Зач.)") || strings.Contains(name, "(Экз.)")
+}
+
+func extractRealGroupName(name string) string {
+	// Pattern: "Subject(Exam)-Semester (GroupName)" -> GroupName
+	lastOpen := strings.LastIndex(name, "(")
+	lastClose := strings.LastIndex(name, ")")
+	if lastOpen != -1 && lastClose != -1 && lastClose > lastOpen+1 {
+		candidate := name[lastOpen+1 : lastClose]
+		// If candidate is just a number or contains special chars, it might not be a real group
+		// But in Suruz it's often the group name
+		if !isExamGroupName(candidate) {
+			return candidate
+		}
+	}
+	return ""
 }
 
 func (i *importer) ensureTerm(ctx context.Context, tx pgx.Tx, startsOn, endsOn time.Time) (uuid.UUID, error) {

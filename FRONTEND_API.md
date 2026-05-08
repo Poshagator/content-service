@@ -53,7 +53,7 @@ Retrieve the full timetable for a specific group.
 
 **Example Request:**
 ```bash
-curl "https://api.poshagator.ru/content/edu/timetable/list?groupID=ac9e6515-0386-40eb-8a12-175fee6b5b2c"
+curl "https://api.poshagator.ru/content/edu/timetable/list?groupID=695156e1-46e3-498b-bdfa-6f7a94b827ee"
 ```
 
 **Example Response:**
