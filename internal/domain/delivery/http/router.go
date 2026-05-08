@@ -29,4 +29,7 @@ func (s *Server) createController() {
 	edu.POST("/term/create", s.eduHandler.CreateAcademicTerm)
 	edu.POST("/term/update", s.eduHandler.UpdateAcademicTerm)
 	edu.POST("/term/delete", s.eduHandler.DeleteAcademicTerm)
+
+	// Timetable
+	edu.GET("/timetable/list", s.eduHandler.GetTimetable)
 }
