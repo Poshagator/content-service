@@ -28,7 +28,6 @@ func (h *Handler) SyncToPlanner(c *gin.Context) {
 		return
 	}
 
-	// Read userID from various possible headers
 	userIDStr := c.GetHeader("X-User-Id")
 	if userIDStr == "" {
 		userIDStr = c.GetHeader("X-App-Id")
@@ -38,18 +37,22 @@ func (h *Handler) SyncToPlanner(c *gin.Context) {
 	}
 
 	if userIDStr != "" {
-		uid, _ := strconv.ParseInt(userIDStr, 10, 64)
+		uid, err := strconv.ParseInt(userIDStr, 10, 64)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid user id header"})
+			return
+		}
 		req.UserID = uid
 	}
 
-	if req.UserID == 0 {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "X-User-Id header is required"})
+	if req.UserID == 0 || req.GroupID == uuid.Nil || req.TermID == uuid.Nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "userID, groupID and termID are required"})
 		return
 	}
 
-	err := h.usecase.SyncGroupScheduleToPlanner(c.Request.Context(), req.UserID, req.GroupID, req.TermID)
+	err := h.usecase.SyncGroupScheduleToPlanner(c.Request.Context(), req.UserID, req.GroupID, req.TermID, req.ActivityID)
 	if err != nil {
-		h.logger.Error("failed to sync schedule to planner", 
+		h.logger.Error("failed to sync schedule to planner",
 			zap.Int64("userID", req.UserID),
 			zap.String("groupID", req.GroupID.String()),
 			zap.Error(err))
@@ -73,7 +76,6 @@ func (h *Handler) UnsubscribeFromPlanner(c *gin.Context) {
 		return
 	}
 
-	// Read userID from various possible headers
 	userIDStr := c.GetHeader("X-User-Id")
 	if userIDStr == "" {
 		userIDStr = c.GetHeader("X-App-Id")
@@ -83,7 +85,11 @@ func (h *Handler) UnsubscribeFromPlanner(c *gin.Context) {
 	}
 
 	if userIDStr != "" {
-		uid, _ := strconv.ParseInt(userIDStr, 10, 64)
+		uid, err := strconv.ParseInt(userIDStr, 10, 64)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid user id header"})
+			return
+		}
 		req.UserID = uid
 	}
 
@@ -94,7 +100,7 @@ func (h *Handler) UnsubscribeFromPlanner(c *gin.Context) {
 
 	err := h.usecase.UnsubscribeFromPlanner(c.Request.Context(), req.UserID, req.GroupID, req.TermID)
 	if err != nil {
-		h.logger.Error("failed to unsubscribe from planner", 
+		h.logger.Error("failed to unsubscribe from planner",
 			zap.Int64("userID", req.UserID),
 			zap.Error(err))
 		h.renderError(c, err)

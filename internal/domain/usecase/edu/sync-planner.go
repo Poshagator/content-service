@@ -10,7 +10,7 @@ import (
 
 const StudyActivityID = "409f07cc-4a6a-41dd-b611-cba20d496ed4"
 
-func (u *Usecase) SyncGroupScheduleToPlanner(ctx context.Context, userID int64, groupID uuid.UUID, termID uuid.UUID) error {
+func (u *Usecase) SyncGroupScheduleToPlanner(ctx context.Context, userID int64, groupID uuid.UUID, termID uuid.UUID, activityID string) error {
 	// 1. Get Term info
 	term, err := u.repo.GetAcademicTerm(ctx, termID)
 	if err != nil {
@@ -25,7 +25,10 @@ func (u *Usecase) SyncGroupScheduleToPlanner(ctx context.Context, userID int64, 
 
 	// 3. Prepare tasks
 	var tasks []*planner.ExternalTask
-	
+	if activityID == "" {
+		activityID = StudyActivityID
+	}
+
 	start := term.StartsOn
 	now := time.Now()
 	if start.Before(now) {
@@ -34,32 +37,16 @@ func (u *Usecase) SyncGroupScheduleToPlanner(ctx context.Context, userID int64, 
 	}
 	end := term.EndsOn
 
-	// Reference for parity
-	// We use YearDay/7 or similar to avoid ISOWeek edge cases at year boundaries if possible,
-	// but ISOWeek is standard for academic schedules.
-	startYear, termStartWeek := term.StartsOn.ISOWeek()
-
 	for d := start; d.Before(end) || d.Equal(end); d = d.AddDate(0, 0, 1) {
 		weekday := int(d.Weekday())
 		if weekday == 0 {
 			weekday = 7 // Sunday
 		}
 
-		// Calculate parity
-		year, currentWeek := d.ISOWeek()
-		
-		// Simple week diff calculation
-		diff := currentWeek - termStartWeek
-		if year > startYear {
-			// Basic approximation for across-year transition
-			// For a single semester this is usually enough
-			diff += 52 * (year - startYear)
-		}
-		
 		// If term.WeekStart is 1, then the first week (diff=0) is ODD.
 		// (0 + 1) % 2 = 1 (ODD)
 		// (1 + 1) % 2 = 0 (EVEN)
-		isOdd := (diff + term.WeekStart) % 2 == 1
+		isOdd := (isoWeekDiff(term.StartsOn, d)+term.WeekStart)%2 == 1
 		var currentWeekType string
 		if isOdd {
 			currentWeekType = "ODD"
@@ -93,7 +80,7 @@ func (u *Usecase) SyncGroupScheduleToPlanner(ctx context.Context, userID int64, 
 				EndTime:     endTime,
 				Title:       entry.SubjectName,
 				Description: fmt.Sprintf("Преподаватель: %s\nАудитория: %s", entry.TeacherName, entry.RoomName),
-				ActivityId:  StudyActivityID,
+				ActivityId:  activityID,
 				Action:      planner.SyncAction_SYNC_ACTION_UPSERT,
 			})
 		}
@@ -142,30 +129,15 @@ func (u *Usecase) UnsubscribeFromPlanner(ctx context.Context, userID int64, grou
 
 	// 3. Prepare tasks for deletion
 	var tasks []*planner.ExternalTask
-	
-	start := term.StartsOn
-	now := time.Now()
-	if start.Before(now) {
-		start = time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
-	}
-	end := term.EndsOn
 
-	// We generate all potential task IDs for this group and delete them
-	startYear, termStartWeek := term.StartsOn.ISOWeek()
-
-	for d := start; d.Before(end) || d.Equal(end); d = d.AddDate(0, 0, 1) {
+	// Delete every task that could have been created for this subscription.
+	for d := term.StartsOn; d.Before(term.EndsOn) || d.Equal(term.EndsOn); d = d.AddDate(0, 0, 1) {
 		weekday := int(d.Weekday())
 		if weekday == 0 {
 			weekday = 7
 		}
 
-		year, currentWeek := d.ISOWeek()
-		diff := currentWeek - termStartWeek
-		if year > startYear {
-			diff += 52 * (year - startYear)
-		}
-		
-		isOdd := (diff + term.WeekStart) % 2 == 1
+		isOdd := (isoWeekDiff(term.StartsOn, d)+term.WeekStart)%2 == 1
 		currentWeekType := "EVEN"
 		if isOdd {
 			currentWeekType = "ODD"
@@ -210,4 +182,21 @@ func (u *Usecase) UnsubscribeFromPlanner(ctx context.Context, userID int64, grou
 	}
 
 	return nil
+}
+
+func isoWeekDiff(from, to time.Time) int {
+	fromWeekStart := isoWeekStart(from)
+	toWeekStart := isoWeekStart(to)
+
+	return int(toWeekStart.Sub(fromWeekStart).Hours() / 24 / 7)
+}
+
+func isoWeekStart(t time.Time) time.Time {
+	weekday := int(t.Weekday())
+	if weekday == 0 {
+		weekday = 7
+	}
+
+	dayStart := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
+	return dayStart.AddDate(0, 0, 1-weekday)
 }
