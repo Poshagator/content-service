@@ -50,14 +50,15 @@ services:
       - traefik_proxy
     labels:
       - "traefik.enable=true"
-
-      - "traefik.http.routers.content.rule=Host(`api.poshagator.ru`) && (Path(`/content`) || PathPrefix(`/content/`))"
+      - "traefik.http.routers.content.rule=(Host(`api.poshagator.ru`) || Host(`api.looklon.ru`)) && (Path(`/content`) || PathPrefix(`/content/`))"
       - "traefik.http.routers.content.entrypoints=websecure"
       - "traefik.http.routers.content.tls.certresolver=myresolver"
       - "traefik.http.routers.content.middlewares=cors@file,api-auth@file"
+      - "traefik.http.routers.content.service=content"
       - "traefik.http.services.content.loadbalancer.server.port=3000"
 
-      - "traefik.http.routers.content-options.rule=Host(`api.poshagator.ru`) && PathPrefix(`/content`) && Method(`OPTIONS`)"
+
+      - "traefik.http.routers.content-options.rule=(Host(`api.poshagator.ru`) || Host(`api.looklon.ru`)) && PathPrefix(`/content`) && Method(`OPTIONS`)"
       - "traefik.http.routers.content-options.entrypoints=websecure"
       - "traefik.http.routers.content-options.priority=1000"
       - "traefik.http.routers.content-options.middlewares=cors@file"
