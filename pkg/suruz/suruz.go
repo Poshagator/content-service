@@ -73,6 +73,7 @@ func Sync(ctx context.Context, cfg Config) (Stats, error) {
 	}
 	defer db.Close()
 
+	var stats Stats
 	imp := &importer{
 		db:       db,
 		filialID: filialID,
