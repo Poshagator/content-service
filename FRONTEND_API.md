@@ -128,8 +128,7 @@ Synchronize the group timetable into the user's personal planner.
 
 **Endpoint:** `POST /sync-to-planner`
 
-**Headers:**
-- `X-User-Id` (int): ID of the user.
+
 
 **Body:**
 ```json
@@ -144,8 +143,7 @@ Remove all university lessons for a specific group/term from the planner.
 
 **Endpoint:** `POST /unsubscribe-from-planner`
 
-**Headers:**
-- `X-User-Id` (int): ID of the user.
+
 
 **Body:**
 ```json

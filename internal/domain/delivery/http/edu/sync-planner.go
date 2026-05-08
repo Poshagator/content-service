@@ -16,6 +16,11 @@ type SyncToPlannerRequest struct {
 }
 
 func (h *Handler) SyncToPlanner(c *gin.Context) {
+	// Debug: log all headers
+	for name, values := range c.Request.Header {
+		h.logger.Debug("Request header", zap.String("name", name), zap.Strings("values", values))
+	}
+
 	var req SyncToPlannerRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.logger.Error("failed to bind sync request", zap.Error(err))
@@ -23,8 +28,15 @@ func (h *Handler) SyncToPlanner(c *gin.Context) {
 		return
 	}
 
-	// Read userID from X-User-Id header
+	// Read userID from various possible headers
 	userIDStr := c.GetHeader("X-User-Id")
+	if userIDStr == "" {
+		userIDStr = c.GetHeader("X-App-Id")
+	}
+	if userIDStr == "" {
+		userIDStr = c.GetHeader("X-UserId")
+	}
+
 	if userIDStr != "" {
 		uid, _ := strconv.ParseInt(userIDStr, 10, 64)
 		req.UserID = uid
@@ -49,6 +61,11 @@ func (h *Handler) SyncToPlanner(c *gin.Context) {
 }
 
 func (h *Handler) UnsubscribeFromPlanner(c *gin.Context) {
+	// Debug: log all headers
+	for name, values := range c.Request.Header {
+		h.logger.Debug("Request header", zap.String("name", name), zap.Strings("values", values))
+	}
+
 	var req SyncToPlannerRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.logger.Error("failed to bind unsubscribe request", zap.Error(err))
@@ -56,7 +73,15 @@ func (h *Handler) UnsubscribeFromPlanner(c *gin.Context) {
 		return
 	}
 
+	// Read userID from various possible headers
 	userIDStr := c.GetHeader("X-User-Id")
+	if userIDStr == "" {
+		userIDStr = c.GetHeader("X-App-Id")
+	}
+	if userIDStr == "" {
+		userIDStr = c.GetHeader("X-UserId")
+	}
+
 	if userIDStr != "" {
 		uid, _ := strconv.ParseInt(userIDStr, 10, 64)
 		req.UserID = uid
