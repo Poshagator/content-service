@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        v6.33.4
-// source: schedule.proto
+// source: pkg/proto/schedule/schedule.proto
 
 package schedule
 
@@ -33,7 +33,7 @@ type SyncScheduleRequest struct {
 
 func (x *SyncScheduleRequest) Reset() {
 	*x = SyncScheduleRequest{}
-	mi := &file_schedule_proto_msgTypes[0]
+	mi := &file_pkg_proto_schedule_schedule_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -45,7 +45,7 @@ func (x *SyncScheduleRequest) String() string {
 func (*SyncScheduleRequest) ProtoMessage() {}
 
 func (x *SyncScheduleRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_schedule_proto_msgTypes[0]
+	mi := &file_pkg_proto_schedule_schedule_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -58,7 +58,7 @@ func (x *SyncScheduleRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SyncScheduleRequest.ProtoReflect.Descriptor instead.
 func (*SyncScheduleRequest) Descriptor() ([]byte, []int) {
-	return file_schedule_proto_rawDescGZIP(), []int{0}
+	return file_pkg_proto_schedule_schedule_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *SyncScheduleRequest) GetUniversityId() string {
@@ -99,7 +99,7 @@ type SyncScheduleResponse struct {
 
 func (x *SyncScheduleResponse) Reset() {
 	*x = SyncScheduleResponse{}
-	mi := &file_schedule_proto_msgTypes[1]
+	mi := &file_pkg_proto_schedule_schedule_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -111,7 +111,7 @@ func (x *SyncScheduleResponse) String() string {
 func (*SyncScheduleResponse) ProtoMessage() {}
 
 func (x *SyncScheduleResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_schedule_proto_msgTypes[1]
+	mi := &file_pkg_proto_schedule_schedule_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -124,7 +124,7 @@ func (x *SyncScheduleResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SyncScheduleResponse.ProtoReflect.Descriptor instead.
 func (*SyncScheduleResponse) Descriptor() ([]byte, []int) {
-	return file_schedule_proto_rawDescGZIP(), []int{1}
+	return file_pkg_proto_schedule_schedule_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *SyncScheduleResponse) GetSuccess() bool {
@@ -141,11 +141,11 @@ func (x *SyncScheduleResponse) GetMessage() string {
 	return ""
 }
 
-var File_schedule_proto protoreflect.FileDescriptor
+var File_pkg_proto_schedule_schedule_proto protoreflect.FileDescriptor
 
-const file_schedule_proto_rawDesc = "" +
+const file_pkg_proto_schedule_schedule_proto_rawDesc = "" +
 	"\n" +
-	"\x0eschedule.proto\x12\bschedule\"\x95\x01\n" +
+	"!pkg/proto/schedule/schedule.proto\x12\bschedule\"\x95\x01\n" +
 	"\x13SyncScheduleRequest\x12#\n" +
 	"\runiversity_id\x18\x01 \x01(\tR\funiversityId\x12\x19\n" +
 	"\bgroup_id\x18\x02 \x01(\tR\agroupId\x12\x1b\n" +
@@ -155,26 +155,26 @@ const file_schedule_proto_rawDesc = "" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage2`\n" +
 	"\x0fScheduleService\x12M\n" +
-	"\fSyncSchedule\x12\x1d.schedule.SyncScheduleRequest\x1a\x1e.schedule.SyncScheduleResponseBPZgithub.com/poshagator/content-service/pkg/proto/schedule/gen;scheduleb\x06proto3"
+	"\fSyncSchedule\x12\x1d.schedule.SyncScheduleRequest\x1a\x1e.schedule.SyncScheduleResponseBGZEgithub.com/poshagator/content-service/pkg/proto/schedule/gen;scheduleb\x06proto3"
 
 var (
-	file_schedule_proto_rawDescOnce sync.Once
-	file_schedule_proto_rawDescData []byte
+	file_pkg_proto_schedule_schedule_proto_rawDescOnce sync.Once
+	file_pkg_proto_schedule_schedule_proto_rawDescData []byte
 )
 
-func file_schedule_proto_rawDescGZIP() []byte {
-	file_schedule_proto_rawDescOnce.Do(func() {
-		file_schedule_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_schedule_proto_rawDesc), len(file_schedule_proto_rawDesc)))
+func file_pkg_proto_schedule_schedule_proto_rawDescGZIP() []byte {
+	file_pkg_proto_schedule_schedule_proto_rawDescOnce.Do(func() {
+		file_pkg_proto_schedule_schedule_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_pkg_proto_schedule_schedule_proto_rawDesc), len(file_pkg_proto_schedule_schedule_proto_rawDesc)))
 	})
-	return file_schedule_proto_rawDescData
+	return file_pkg_proto_schedule_schedule_proto_rawDescData
 }
 
-var file_schedule_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
-var file_schedule_proto_goTypes = []any{
+var file_pkg_proto_schedule_schedule_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_pkg_proto_schedule_schedule_proto_goTypes = []any{
 	(*SyncScheduleRequest)(nil),  // 0: schedule.SyncScheduleRequest
 	(*SyncScheduleResponse)(nil), // 1: schedule.SyncScheduleResponse
 }
-var file_schedule_proto_depIdxs = []int32{
+var file_pkg_proto_schedule_schedule_proto_depIdxs = []int32{
 	0, // 0: schedule.ScheduleService.SyncSchedule:input_type -> schedule.SyncScheduleRequest
 	1, // 1: schedule.ScheduleService.SyncSchedule:output_type -> schedule.SyncScheduleResponse
 	1, // [1:2] is the sub-list for method output_type
@@ -184,26 +184,26 @@ var file_schedule_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for field type_name
 }
 
-func init() { file_schedule_proto_init() }
-func file_schedule_proto_init() {
-	if File_schedule_proto != nil {
+func init() { file_pkg_proto_schedule_schedule_proto_init() }
+func file_pkg_proto_schedule_schedule_proto_init() {
+	if File_pkg_proto_schedule_schedule_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_schedule_proto_rawDesc), len(file_schedule_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pkg_proto_schedule_schedule_proto_rawDesc), len(file_pkg_proto_schedule_schedule_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   2,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_schedule_proto_goTypes,
-		DependencyIndexes: file_schedule_proto_depIdxs,
-		MessageInfos:      file_schedule_proto_msgTypes,
+		GoTypes:           file_pkg_proto_schedule_schedule_proto_goTypes,
+		DependencyIndexes: file_pkg_proto_schedule_schedule_proto_depIdxs,
+		MessageInfos:      file_pkg_proto_schedule_schedule_proto_msgTypes,
 	}.Build()
-	File_schedule_proto = out.File
-	file_schedule_proto_goTypes = nil
-	file_schedule_proto_depIdxs = nil
+	File_pkg_proto_schedule_schedule_proto = out.File
+	file_pkg_proto_schedule_schedule_proto_goTypes = nil
+	file_pkg_proto_schedule_schedule_proto_depIdxs = nil
 }
