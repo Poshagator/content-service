@@ -9,6 +9,7 @@ import (
 	"github.com/poshagator/content-service/config"
 	"github.com/poshagator/content-service/internal/domain/delivery/http/edu"
 	"github.com/poshagator/content-service/internal/domain/delivery/http/product"
+	"github.com/poshagator/content-service/internal/domain/delivery/http/filial"
 )
 
 type Server struct {
@@ -17,6 +18,7 @@ type Server struct {
 	serv           *gin.Engine
 	productHandler *product.Handler
 	eduHandler     *edu.Handler
+	filialHandler  *filial.Handler
 }
 
 func NewServer(
@@ -24,6 +26,7 @@ func NewServer(
 	cfg *config.ConfigModel,
 	ph *product.Handler,
 	eh *edu.Handler,
+	fh *filial.Handler,
 ) (*Server, error) {
 	return &Server{
 		logger:         logger,
@@ -31,11 +34,13 @@ func NewServer(
 		serv:           gin.Default(),
 		productHandler: ph,
 		eduHandler:     eh,
+		filialHandler:  fh,
 	}, nil
 }
 
 func (s *Server) OnStart(_ context.Context) error {
 	s.createController()
+	s.createFilialController()
 
 	go func() {
 		addr := s.cfg.HTTP.Host + ":" + s.cfg.HTTP.Port

@@ -36,3 +36,8 @@ func (s *Server) createController() {
 	edu.POST("/sync-to-planner", s.eduHandler.SyncToPlanner)
 	edu.POST("/unsubscribe-from-planner", s.eduHandler.UnsubscribeFromPlanner)
 }
+
+func (s *Server) createFilialController() {
+	filial := s.serv.Group("/content/filial")
+	filial.GET("/features", s.filialHandler.GetFilialFeatures)
+}

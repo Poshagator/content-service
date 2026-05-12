@@ -5,6 +5,7 @@ import (
 
 	"github.com/poshagator/content-service/internal/domain/usecase/edu"
 	"github.com/poshagator/content-service/internal/domain/usecase/product"
+	"github.com/poshagator/content-service/internal/domain/usecase/filial"
 )
 
 func New() fx.Option {
@@ -13,6 +14,7 @@ func New() fx.Option {
 		fx.Provide(
 			edu.NewUsecase,
 			product.NewUsecase,
+			filial.NewUsecase,
 		),
 	)
 }

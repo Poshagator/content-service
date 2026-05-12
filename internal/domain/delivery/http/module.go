@@ -4,6 +4,7 @@ import (
 	"go.uber.org/fx"
 	"github.com/poshagator/content-service/internal/domain/delivery/http/edu"
 	"github.com/poshagator/content-service/internal/domain/delivery/http/product"
+	"github.com/poshagator/content-service/internal/domain/delivery/http/filial"
 )
 
 func New() fx.Option {
@@ -11,6 +12,7 @@ func New() fx.Option {
 		fx.Provide(
 			edu.NewHandler,
 			product.NewHandler,
+			filial.NewHandler,
 			NewServer,
 		),
 		fx.Invoke(func(lc fx.Lifecycle, s *Server) {

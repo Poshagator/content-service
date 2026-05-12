@@ -254,3 +254,13 @@ func (r *Repository) GetProductsByIDs(
 	}
 	return products, nil
 }
+
+func (r *Repository) HasProducts(ctx context.Context, filialID uuid.UUID) (bool, error) {
+	var exists bool
+	err := r.db.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM public.product WHERE filial_id = $1)", filialID).Scan(&exists)
+	if err != nil {
+		r.log.Error("failed to check products existence", zap.Error(err))
+		return false, err
+	}
+	return exists, nil
+}

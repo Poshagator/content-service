@@ -136,3 +136,13 @@ func (r *Repository) SearchEduGroups(ctx context.Context, filialID uuid.UUID, na
 
 	return edu.EduGroupsDao(daos).ToEduGroups(), nil
 }
+
+func (r *Repository) HasEduGroups(ctx context.Context, filialID uuid.UUID) (bool, error) {
+	var exists bool
+	err := r.db.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM public.edu_group WHERE filial_id = $1)", filialID).Scan(&exists)
+	if err != nil {
+		r.log.Error("failed to check edu groups existence", zap.Error(err))
+		return false, err
+	}
+	return exists, nil
+}
