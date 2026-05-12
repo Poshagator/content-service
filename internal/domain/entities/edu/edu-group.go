@@ -22,6 +22,23 @@ type EduGroup struct {
 }
 
 type EduGroupsDao []EduGroupDao
+
+type EduGroupsByFaculty []EduFacultyGroup
+
+type EduFacultyGroup struct {
+	FacultyID      int              `json:"faculty_id"`
+	FacultyName    string           `json:"faculty_name"`
+	EducationLevel string           `json:"education_level"`
+	IsMagistracy   bool             `json:"is_magistracy"`
+	Courses        []EduCourseGroup `json:"courses"`
+}
+
+type EduCourseGroup struct {
+	CourseID   int        `json:"course_id"`
+	CourseName string     `json:"course_name"`
+	Groups     []EduGroup `json:"groups"`
+}
+
 type EduGroupDao struct {
 	ID             sql.NullString `db:"id" json:"id"`
 	FilialID       sql.NullString `db:"filial_id" json:"filial_id"`

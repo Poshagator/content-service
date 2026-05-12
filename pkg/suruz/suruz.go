@@ -181,9 +181,9 @@ type suruzGroup struct {
 
 func (g suruzGroup) displayName() string {
 	if strings.TrimSpace(g.Title) != "" {
-		return strings.TrimSpace(g.Title)
+		return cleanSuruzGroupName(g.Title)
 	}
-	return strings.TrimSpace(g.Name)
+	return cleanSuruzGroupName(g.Name)
 }
 
 type suruzSubgroup struct {
@@ -198,9 +198,9 @@ type suruzSubgroup struct {
 
 func (s suruzSubgroup) displayName() string {
 	if strings.TrimSpace(s.Title) != "" {
-		return strings.TrimSpace(s.Title)
+		return cleanSuruzGroupName(s.Title)
 	}
-	return strings.TrimSpace(s.Name)
+	return cleanSuruzGroupName(s.Name)
 }
 
 type suruzTeacher struct {
@@ -669,10 +669,24 @@ func extractRealGroupName(name string) string {
 		// If candidate is just a number or contains special chars, it might not be a real group
 		// But in Suruz it's often the group name
 		if !isExamGroupName(candidate) {
-			return candidate
+			return cleanSuruzGroupName(candidate)
 		}
 	}
 	return ""
+}
+
+func cleanSuruzGroupName(name string) string {
+	name = strings.TrimSpace(name)
+	underscore := strings.LastIndex(name, "_")
+	if underscore == -1 || underscore == len(name)-1 {
+		return name
+	}
+	for _, r := range name[underscore+1:] {
+		if r < '0' || r > '9' {
+			return name
+		}
+	}
+	return strings.TrimSpace(name[:underscore])
 }
 
 func (i *importer) ensureTerm(ctx context.Context, tx pgx.Tx, startsOn, endsOn time.Time) (uuid.UUID, error) {

@@ -2,9 +2,9 @@ package edu
 
 import (
 	"context"
+	"github.com/google/uuid"
 	"github.com/poshagator/content-service/internal/domain/entities/edu"
 	"github.com/poshagator/content-service/pkg"
-	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
@@ -58,6 +58,16 @@ func (u *Usecase) GetEduGroups(ctx context.Context, filialID uuid.UUID, size, pa
 	return EduGroups, nil
 }
 
+func (u *Usecase) GetEduGroupsGrouped(ctx context.Context, filialID uuid.UUID) (edu.EduGroupsByFaculty, error) {
+	groups, err := u.repo.GetEduGroups(ctx, filialID, " ORDER BY faculty_name NULLS LAST, education_level, course_name NULLS LAST, name")
+	if err != nil {
+		u.log.Error("failed to get grouped EduGroups", zap.Error(err))
+		return nil, err
+	}
+
+	return groupEduGroups(groups), nil
+}
+
 func (u *Usecase) SearchEduGroups(ctx context.Context, filialID uuid.UUID, name string, limit int) ([]edu.EduGroup, error) {
 	if limit <= 0 {
 		limit = 20
@@ -67,4 +77,51 @@ func (u *Usecase) SearchEduGroups(ctx context.Context, filialID uuid.UUID, name 
 	}
 
 	return u.repo.SearchEduGroups(ctx, filialID, name, limit)
+}
+
+func groupEduGroups(groups []edu.EduGroup) edu.EduGroupsByFaculty {
+	facultyIndex := make(map[string]int)
+	courseIndex := make(map[string]map[string]int)
+	result := make(edu.EduGroupsByFaculty, 0)
+
+	for _, group := range groups {
+		facultyKey := group.FacultyName
+		if facultyKey == "" {
+			facultyKey = "Без факультета"
+		}
+		facultyKey = facultyKey + "|" + group.EducationLevel
+
+		fi, ok := facultyIndex[facultyKey]
+		if !ok {
+			fi = len(result)
+			facultyIndex[facultyKey] = fi
+			courseIndex[facultyKey] = make(map[string]int)
+			result = append(result, edu.EduFacultyGroup{
+				FacultyID:      group.FacultyID,
+				FacultyName:    group.FacultyName,
+				EducationLevel: group.EducationLevel,
+				IsMagistracy:   group.IsMagistracy,
+				Courses:        make([]edu.EduCourseGroup, 0),
+			})
+		}
+
+		courseKey := group.CourseName
+		if courseKey == "" {
+			courseKey = "Без курса"
+		}
+		ci, ok := courseIndex[facultyKey][courseKey]
+		if !ok {
+			ci = len(result[fi].Courses)
+			courseIndex[facultyKey][courseKey] = ci
+			result[fi].Courses = append(result[fi].Courses, edu.EduCourseGroup{
+				CourseID:   group.CourseID,
+				CourseName: group.CourseName,
+				Groups:     make([]edu.EduGroup, 0),
+			})
+		}
+
+		result[fi].Courses[ci].Groups = append(result[fi].Courses[ci].Groups, group)
+	}
+
+	return result
 }

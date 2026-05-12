@@ -1,9 +1,9 @@
 package edu
 
 import (
-	"github.com/poshagator/content-service/internal/domain/entities/edu"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/poshagator/content-service/internal/domain/entities/edu"
 	"go.uber.org/zap"
 	"net/http"
 	"strconv"
@@ -89,6 +89,18 @@ func (h *Handler) ListEduGroups(c *gin.Context) {
 		return
 	}
 
+	if c.Query("grouped") == "true" {
+		eduGroups, err := h.usecase.GetEduGroupsGrouped(c, filialID)
+		if err != nil {
+			h.logger.Error("failed to get grouped eduGroups", zap.Error(err))
+			h.renderError(c, err)
+			return
+		}
+
+		c.JSON(http.StatusOK, eduGroups)
+		return
+	}
+
 	page, err := strconv.Atoi(c.Query("page"))
 	if err != nil {
 		h.logger.Error("failed to convert page to int", zap.Error(err))
@@ -105,6 +117,24 @@ func (h *Handler) ListEduGroups(c *gin.Context) {
 	eduGroups, err := h.usecase.GetEduGroups(c, filialID, size, page)
 	if err != nil {
 		h.logger.Error("failed to get eduGroups", zap.Error(err))
+		h.renderError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, eduGroups)
+}
+
+func (h *Handler) ListEduGroupsTree(c *gin.Context) {
+	filialID, err := uuid.Parse(c.Query("filialID"))
+	if err != nil {
+		h.logger.Error("failed to parse filialID", zap.Error(err))
+		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to get filialID " + err.Error()})
+		return
+	}
+
+	eduGroups, err := h.usecase.GetEduGroupsGrouped(c, filialID)
+	if err != nil {
+		h.logger.Error("failed to get grouped eduGroups", zap.Error(err))
 		h.renderError(c, err)
 		return
 	}
