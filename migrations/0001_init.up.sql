@@ -126,6 +126,8 @@ CREATE TABLE timetable_entry (
     classroom_id  uuid REFERENCES room(id) ON DELETE SET NULL,
     day_of_week   int  NOT NULL,
     occurs_on     date,
+    effective_from date,
+    effective_to   date,
     starts_at     time NOT NULL,
     ends_at       time NOT NULL,
     week_type     varchar NOT NULL DEFAULT 'ALL',

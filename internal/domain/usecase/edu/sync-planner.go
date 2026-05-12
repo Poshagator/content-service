@@ -71,7 +71,14 @@ func (u *Usecase) SyncGroupScheduleToPlanner(ctx context.Context, userID string,
 		}
 
 		for _, entry := range timetable {
-			if entry.OccursOn != "" && entry.OccursOn != d.Format("2006-01-02") {
+			date := d.Format("2006-01-02")
+			if entry.OccursOn != "" && entry.OccursOn != date {
+				continue
+			}
+			if entry.EffectiveFrom != "" && date < entry.EffectiveFrom {
+				continue
+			}
+			if entry.EffectiveTo != "" && date > entry.EffectiveTo {
 				continue
 			}
 			if entry.DayOfWeek != weekday {
@@ -101,8 +108,8 @@ func (u *Usecase) SyncGroupScheduleToPlanner(ctx context.Context, userID string,
 			}
 
 			tasks = append(tasks, &planner.ExternalTask{
-				ExternalId:  fmt.Sprintf("%s_%s", entry.ID, d.Format("2006-01-02")),
-				Date:        d.Format("2006-01-02"),
+				ExternalId:  fmt.Sprintf("%s_%s", entry.ID, date),
+				Date:        date,
 				StartTime:   startTime,
 				EndTime:     endTime,
 				Title:       entry.SubjectName,
@@ -189,7 +196,14 @@ func (u *Usecase) UnsubscribeFromPlanner(ctx context.Context, userID string, gro
 		}
 
 		for _, entry := range timetable {
-			if entry.OccursOn != "" && entry.OccursOn != d.Format("2006-01-02") {
+			date := d.Format("2006-01-02")
+			if entry.OccursOn != "" && entry.OccursOn != date {
+				continue
+			}
+			if entry.EffectiveFrom != "" && date < entry.EffectiveFrom {
+				continue
+			}
+			if entry.EffectiveTo != "" && date > entry.EffectiveTo {
 				continue
 			}
 			if entry.DayOfWeek != weekday {
@@ -200,7 +214,7 @@ func (u *Usecase) UnsubscribeFromPlanner(ctx context.Context, userID string, gro
 			}
 
 			tasks = append(tasks, &planner.ExternalTask{
-				ExternalId: fmt.Sprintf("%s_%s", entry.ID, d.Format("2006-01-02")),
+				ExternalId: fmt.Sprintf("%s_%s", entry.ID, date),
 				Action:     planner.SyncAction_SYNC_ACTION_DELETE,
 			})
 			totalGenerated++

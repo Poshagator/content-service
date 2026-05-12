@@ -45,6 +45,13 @@ type Stats struct {
 	EntriesExisting int
 }
 
+type weekData struct {
+	Date   string `json:"date"`
+	Week   int    `json:"week"`
+	Offset int    `json:"offset"`
+	IsOdd  bool   `json:"is_odd"`
+}
+
 func Sync(ctx context.Context, cfg Config) (Stats, error) {
 	cfg = cfg.withDefaults()
 
@@ -57,6 +64,13 @@ func Sync(ctx context.Context, cfg Config) (Stats, error) {
 	meta, err := fetchGroups(ctx, client, cfg.APIBase)
 	if err != nil {
 		return Stats{}, fmt.Errorf("fetch groups: %w", err)
+	}
+	week, err := fetchWeek(ctx, client, cfg.APIBase)
+	if err != nil {
+		week.Offset = 1
+		if cfg.Logger != nil {
+			cfg.Logger.Warn("failed to fetch Suruz week offset, falling back to offset=1", zap.Error(err))
+		}
 	}
 
 	sources := buildSources(meta, cfg.SourceIDs, cfg.SourceParam)
@@ -75,13 +89,14 @@ func Sync(ctx context.Context, cfg Config) (Stats, error) {
 
 	var stats Stats
 	imp := &importer{
-		db:       db,
-		filialID: filialID,
-		termName: cfg.TermName,
-		subjects: make(map[string]uuid.UUID),
-		rooms:    make(map[string]uuid.UUID),
-		groups:   make(map[string]uuid.UUID),
-		teachers: make(map[string]uuid.UUID),
+		db:         db,
+		filialID:   filialID,
+		termName:   cfg.TermName,
+		weekOffset: week.Offset,
+		subjects:   make(map[string]uuid.UUID),
+		rooms:      make(map[string]uuid.UUID),
+		groups:     make(map[string]uuid.UUID),
+		teachers:   make(map[string]uuid.UUID),
 	}
 
 	// 1. Import Metadata (Groups & Teachers) first so they are visible immediately
@@ -236,9 +251,10 @@ type scheduleSource struct {
 }
 
 type importer struct {
-	db       *pgxpool.Pool
-	filialID uuid.UUID
-	termName string
+	db         *pgxpool.Pool
+	filialID   uuid.UUID
+	termName   string
+	weekOffset int
 
 	subjects map[string]uuid.UUID
 	rooms    map[string]uuid.UUID
@@ -266,6 +282,12 @@ func fetchSchedule(ctx context.Context, client *http.Client, apiBase string, sou
 		return scheduleData{}, err
 	}
 	return response.Data, nil
+}
+
+func fetchWeek(ctx context.Context, client *http.Client, apiBase string) (weekData, error) {
+	var response apiResponse[weekData]
+	err := getJSON(ctx, client, strings.TrimRight(apiBase, "/")+"/v2/week", &response)
+	return response.Data, err
 }
 
 func getJSON(ctx context.Context, client *http.Client, endpoint string, target any) error {
@@ -462,15 +484,22 @@ func (i *importer) importEvent(ctx context.Context, tx pgx.Tx, termID uuid.UUID,
 	if err != nil {
 		return 0, 0, nil
 	}
+	endDate, err := parseEventEndDate(event, startDate)
+	if err != nil {
+		return 0, 0, nil
+	}
 	startsAt, endsAt, err := parseLessonTime(event.CustomTime, event.Lesson, event.LessonEnd)
 	if err != nil {
 		return 0, 0, nil
 	}
 	weekType := eventWeekType(event, startDate)
 	var occursOn *time.Time
+	effectiveFrom := dateOnly(startDate)
+	effectiveTo := dateOnly(endDate)
 	if isExactEvent(event) {
 		day := dateOnly(startDate)
 		occursOn = &day
+		effectiveTo = day
 		weekType = "ONCE"
 	}
 
@@ -525,7 +554,7 @@ func (i *importer) importEvent(ctx context.Context, tx pgx.Tx, termID uuid.UUID,
 		if err != nil {
 			return 0, 0, err
 		}
-		wasCreated, err := i.ensureTimetableEntry(ctx, tx, termID, groupID, subjectID, teacherID, roomID, event.ID, postgresDayOfWeek(startDate), occursOn, startsAt, endsAt, weekType, event.Exam, eventComment(event))
+		wasCreated, err := i.ensureTimetableEntry(ctx, tx, termID, groupID, subjectID, teacherID, roomID, event.ID, postgresDayOfWeek(startDate), occursOn, effectiveFrom, effectiveTo, startsAt, endsAt, weekType, event.Exam, eventComment(event))
 		if err != nil {
 			return 0, 0, err
 		}
@@ -567,28 +596,34 @@ func (i *importer) ensureTerm(ctx context.Context, tx pgx.Tx, startsOn, endsOn t
 	if endsOn.Before(startsOn) {
 		endsOn = startsOn.AddDate(0, 6, 0)
 	}
-
 	var id uuid.UUID
+	var currentStartsOn time.Time
 	err := tx.QueryRow(ctx, `
-SELECT id FROM public.academic_term WHERE filial_id = $1 AND name = $2 LIMIT 1
-`, i.filialID, i.termName).Scan(&id)
+SELECT id, starts_on FROM public.academic_term WHERE filial_id = $1 AND name = $2 LIMIT 1
+`, i.filialID, i.termName).Scan(&id, &currentStartsOn)
 	if err == nil {
+		newStartsOn := startsOn
+		if currentStartsOn.Before(newStartsOn) {
+			newStartsOn = currentStartsOn
+		}
+		weekStart := weekStartForSuruzOffset(newStartsOn, i.weekOffset)
 		_, err = tx.Exec(ctx, `
 UPDATE public.academic_term
-SET starts_on = LEAST(starts_on, $2), ends_on = GREATEST(ends_on, $3), updated_at = now()
+SET starts_on = LEAST(starts_on, $2), ends_on = GREATEST(ends_on, $3), week_start = $4, updated_at = now()
 WHERE id = $1
-`, id, startsOn, endsOn)
+`, id, startsOn, endsOn, weekStart)
 		return id, err
 	}
 	if err != pgx.ErrNoRows {
 		return uuid.Nil, err
 	}
+	weekStart := weekStartForSuruzOffset(startsOn, i.weekOffset)
 
 	err = tx.QueryRow(ctx, `
 INSERT INTO public.academic_term (filial_id, name, starts_on, ends_on, week_start)
-VALUES ($1, $2, $3, $4, 1)
+VALUES ($1, $2, $3, $4, $5)
 RETURNING id
-`, i.filialID, i.termName, startsOn, endsOn).Scan(&id)
+`, i.filialID, i.termName, startsOn, endsOn, weekStart).Scan(&id)
 	return id, err
 }
 
@@ -689,13 +724,13 @@ RETURNING id
 	return staffID, nil
 }
 
-func (i *importer) ensureTimetableEntry(ctx context.Context, tx pgx.Tx, termID, groupID, subjectID uuid.UUID, teacherID, roomID *uuid.UUID, sourceEventID int64, dayOfWeek int, occursOn *time.Time, startsAt, endsAt, weekType string, isExam bool, comment string) (bool, error) {
+func (i *importer) ensureTimetableEntry(ctx context.Context, tx pgx.Tx, termID, groupID, subjectID uuid.UUID, teacherID, roomID *uuid.UUID, sourceEventID int64, dayOfWeek int, occursOn *time.Time, effectiveFrom, effectiveTo time.Time, startsAt, endsAt, weekType string, isExam bool, comment string) (bool, error) {
 	var created bool
 	err := tx.QueryRow(ctx, `
 INSERT INTO public.timetable_entry (
-	term_id, group_id, subject_id, teacher_id, classroom_id, day_of_week, occurs_on, starts_at, ends_at, week_type, source, source_event_id, is_exam, comment
+	term_id, group_id, subject_id, teacher_id, classroom_id, day_of_week, occurs_on, effective_from, effective_to, starts_at, ends_at, week_type, source, source_event_id, is_exam, comment
 ) VALUES (
-	$1, $2, $3, $4, $5, $6, $7, $8::time, $9::time, $10, 'suruz', $11, $12, $13
+	$1, $2, $3, $4, $5, $6, $7, $8, $9, $10::time, $11::time, $12, 'suruz', $13, $14, $15
 )
 ON CONFLICT ON CONSTRAINT timetable_entry_source_event_unique DO UPDATE SET
 	subject_id = EXCLUDED.subject_id,
@@ -703,6 +738,8 @@ ON CONFLICT ON CONSTRAINT timetable_entry_source_event_unique DO UPDATE SET
 	classroom_id = EXCLUDED.classroom_id,
 	day_of_week = EXCLUDED.day_of_week,
 	occurs_on = EXCLUDED.occurs_on,
+	effective_from = EXCLUDED.effective_from,
+	effective_to = EXCLUDED.effective_to,
 	starts_at = EXCLUDED.starts_at,
 	ends_at = EXCLUDED.ends_at,
 	week_type = EXCLUDED.week_type,
@@ -710,7 +747,7 @@ ON CONFLICT ON CONSTRAINT timetable_entry_source_event_unique DO UPDATE SET
 	comment = EXCLUDED.comment,
 	updated_at = now()
 RETURNING xmax = 0
-`, termID, groupID, subjectID, teacherID, roomID, dayOfWeek, occursOn, startsAt, endsAt, weekType, sourceEventID, isExam, nullIfEmpty(comment)).Scan(&created)
+`, termID, groupID, subjectID, teacherID, roomID, dayOfWeek, occursOn, effectiveFrom, effectiveTo, startsAt, endsAt, weekType, sourceEventID, isExam, nullIfEmpty(comment)).Scan(&created)
 	return created, err
 }
 
@@ -722,11 +759,15 @@ func singleScheduleDateRange(data scheduleData) (time.Time, time.Time) {
 		if err != nil {
 			continue
 		}
+		endDate, err := parseEventEndDate(event, date)
+		if err != nil {
+			endDate = date
+		}
 		if minDate.IsZero() || date.Before(minDate) {
 			minDate = date
 		}
-		if maxDate.IsZero() || date.After(maxDate) {
-			maxDate = date
+		if maxDate.IsZero() || endDate.After(maxDate) {
+			maxDate = endDate
 		}
 	}
 	return minDate, maxDate
@@ -741,6 +782,20 @@ func parseAPIDate(raw string) (time.Time, error) {
 		return date, nil
 	}
 	return time.Parse("2006-01-02", raw)
+}
+
+func parseEventEndDate(event suruzEvent, startDate time.Time) (time.Time, error) {
+	if strings.TrimSpace(event.EndDateISO) == "" {
+		return startDate, nil
+	}
+	endDate, err := parseAPIDate(event.EndDateISO)
+	if err != nil {
+		return time.Time{}, err
+	}
+	if endDate.Before(startDate) {
+		return startDate, nil
+	}
+	return endDate, nil
 }
 
 func parseLessonTime(customTime, lesson, lessonEnd string) (string, string, error) {
@@ -819,6 +874,14 @@ func postgresDayOfWeek(date time.Time) int {
 
 func dateOnly(t time.Time) time.Time {
 	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
+}
+
+func weekStartForSuruzOffset(termStart time.Time, offset int) int {
+	_, isoWeek := termStart.ISOWeek()
+	if (isoWeek+offset)%2 == 1 {
+		return 1
+	}
+	return 0
 }
 
 func isExactEvent(event suruzEvent) bool {

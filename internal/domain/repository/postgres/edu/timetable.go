@@ -13,6 +13,8 @@ SELECT
     te.id,
     te.day_of_week,
     COALESCE(te.occurs_on::text, '') AS occurs_on,
+    COALESCE(te.effective_from::text, '') AS effective_from,
+    COALESCE(te.effective_to::text, '') AS effective_to,
     te.starts_at::text,
     te.ends_at::text,
     te.week_type,

@@ -2,6 +2,8 @@ BEGIN;
 
 ALTER TABLE public.timetable_entry
     ADD COLUMN IF NOT EXISTS occurs_on date,
+    ADD COLUMN IF NOT EXISTS effective_from date,
+    ADD COLUMN IF NOT EXISTS effective_to date,
     ADD COLUMN IF NOT EXISTS source varchar,
     ADD COLUMN IF NOT EXISTS source_event_id bigint,
     ADD COLUMN IF NOT EXISTS is_exam boolean NOT NULL DEFAULT false,
