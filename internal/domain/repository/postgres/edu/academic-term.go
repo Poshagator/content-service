@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
-	"go.uber.org/zap"
 	"github.com/poshagator/content-service/internal/domain/entities/edu"
+	"go.uber.org/zap"
 )
 
 const qGetAcademicTerm = `
@@ -113,4 +113,43 @@ func (r *Repository) GetAcademicTerms(ctx context.Context, filialID uuid.UUID, s
 	}
 
 	return edu.AcademicTermsDao(AcademicTermsDAOs).ToAcademicTerms(), nil
+}
+
+const qGetCurrentAcademicTermForGroup = `
+SELECT
+    at.id, at.filial_id, at.name, at.starts_on, at.ends_on, at.week_start
+FROM
+    public.academic_term at
+WHERE
+    EXISTS (
+        SELECT 1
+        FROM public.timetable_entry te
+        WHERE te.term_id = at.id AND te.group_id = $1
+    )
+ORDER BY
+    CASE
+        WHEN at.starts_on <= CURRENT_DATE AND at.ends_on >= CURRENT_DATE THEN 0
+        WHEN at.starts_on > CURRENT_DATE THEN 1
+        ELSE 2
+    END,
+    CASE WHEN at.starts_on > CURRENT_DATE THEN at.starts_on END ASC,
+    at.ends_on DESC
+LIMIT 1
+`
+
+func (r *Repository) GetCurrentAcademicTermForGroup(ctx context.Context, groupID uuid.UUID) (*edu.AcademicTerm, error) {
+	rows, err := r.db.Query(ctx, qGetCurrentAcademicTermForGroup, groupID)
+	if err != nil {
+		r.log.Error("failed to get current AcademicTerm for group", zap.Error(err))
+		return nil, err
+	}
+	defer rows.Close()
+
+	term, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[edu.AcademicTermDao])
+	if err != nil {
+		r.log.Error("failed to collect current AcademicTerm for group", zap.Error(err))
+		return nil, err
+	}
+
+	return term.ToAcademicTerm(), nil
 }

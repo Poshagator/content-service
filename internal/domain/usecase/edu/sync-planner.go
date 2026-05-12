@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/google/uuid"
+	entityedu "github.com/poshagator/content-service/internal/domain/entities/edu"
 	"github.com/poshagator/content-service/pkg/proto/planner/gen"
 	"go.uber.org/zap"
 	"time"
@@ -14,10 +15,11 @@ const plannerSourceUniversity = "university"
 
 func (u *Usecase) SyncGroupScheduleToPlanner(ctx context.Context, userID string, groupID uuid.UUID, termID uuid.UUID, activityID string) error {
 	// 1. Get Term info
-	term, err := u.repo.GetAcademicTerm(ctx, termID)
+	term, err := u.resolveScheduleTerm(ctx, groupID, termID)
 	if err != nil {
 		return fmt.Errorf("get academic term: %w", err)
 	}
+	termID = term.ID
 
 	// 2. Get Timetable
 	timetable, err := u.repo.GetTimetableByTerm(ctx, groupID, termID)
@@ -156,10 +158,11 @@ func (u *Usecase) SyncGroupScheduleToPlanner(ctx context.Context, userID string,
 
 func (u *Usecase) UnsubscribeFromPlanner(ctx context.Context, userID string, groupID uuid.UUID, termID uuid.UUID) error {
 	// 1. Get Term info
-	term, err := u.repo.GetAcademicTerm(ctx, termID)
+	term, err := u.resolveScheduleTerm(ctx, groupID, termID)
 	if err != nil {
 		return fmt.Errorf("get academic term: %w", err)
 	}
+	termID = term.ID
 
 	// 2. Get Timetable
 	timetable, err := u.repo.GetTimetableByTerm(ctx, groupID, termID)
@@ -250,6 +253,13 @@ func (u *Usecase) UnsubscribeFromPlanner(ctx context.Context, userID string, gro
 	)
 
 	return nil
+}
+
+func (u *Usecase) resolveScheduleTerm(ctx context.Context, groupID uuid.UUID, termID uuid.UUID) (*entityedu.AcademicTerm, error) {
+	if termID != uuid.Nil {
+		return u.repo.GetAcademicTerm(ctx, termID)
+	}
+	return u.repo.GetCurrentAcademicTermForGroup(ctx, groupID)
 }
 
 func (u *Usecase) sendPlannerTaskBatch(ctx context.Context, userID, source string, tasks []*planner.ExternalTask, operation string, batchNumber int) (int, error) {

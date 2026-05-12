@@ -26,8 +26,8 @@ func (h *Handler) SyncToPlanner(c *gin.Context) {
 		req.UserID = userID
 	}
 
-	if req.UserID == "" || req.GroupID == uuid.Nil || req.TermID == uuid.Nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "userID, groupID and termID are required"})
+	if req.UserID == "" || req.GroupID == uuid.Nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "userID and groupID are required"})
 		return
 	}
 
@@ -56,8 +56,8 @@ func (h *Handler) UnsubscribeFromPlanner(c *gin.Context) {
 		req.UserID = userID
 	}
 
-	if req.UserID == "" || req.GroupID == uuid.Nil || req.TermID == uuid.Nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "userID, groupID and termID are required"})
+	if req.UserID == "" || req.GroupID == uuid.Nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "userID and groupID are required"})
 		return
 	}
 

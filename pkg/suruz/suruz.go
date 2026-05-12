@@ -20,7 +20,7 @@ const (
 	DefaultAPIBase  = "http://api.apps.inforino.ru/company/55193/suruz"
 	DefaultFilialID = "4888f1e4-5916-45ef-a485-0d0381872968"
 	DefaultDSN      = "postgres://postgres:password@localhost:5432/postgres?sslmode=disable"
-	DefaultTermName = "Suruz MGIMO test"
+	DefaultTermName = "Актуальное расписание МГИМО"
 )
 
 type Config struct {
