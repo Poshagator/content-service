@@ -80,11 +80,32 @@ func (u *Usecase) SearchEduGroups(ctx context.Context, filialID uuid.UUID, name 
 }
 
 func groupEduGroups(groups []edu.EduGroup) edu.EduGroupsByFaculty {
+	byID := make(map[uuid.UUID]*edu.EduGroup, len(groups))
+	parentGroups := make([]edu.EduGroup, 0, len(groups))
+	for i := range groups {
+		group := groups[i]
+		group.Subgroups = nil
+		if !group.IsSubgroup {
+			parentGroups = append(parentGroups, group)
+		}
+	}
+	for i := range parentGroups {
+		byID[parentGroups[i].ID] = &parentGroups[i]
+	}
+	for _, group := range groups {
+		if !group.IsSubgroup || group.ParentGroupID == uuid.Nil {
+			continue
+		}
+		if parent, ok := byID[group.ParentGroupID]; ok {
+			parent.Subgroups = append(parent.Subgroups, group)
+		}
+	}
+
 	facultyIndex := make(map[string]int)
 	courseIndex := make(map[string]map[string]int)
 	result := make(edu.EduGroupsByFaculty, 0)
 
-	for _, group := range groups {
+	for _, group := range parentGroups {
 		facultyKey := group.FacultyName
 		if facultyKey == "" {
 			facultyKey = "Без факультета"

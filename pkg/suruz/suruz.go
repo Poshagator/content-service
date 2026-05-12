@@ -100,7 +100,7 @@ func Sync(ctx context.Context, cfg Config) (Stats, error) {
 	}
 
 	// 1. Import Metadata (Groups & Teachers) first so they are visible immediately
-	teacherByID, groupByID, subgroupToGroupID, err := imp.importMetadata(ctx, meta, &stats)
+	teacherByID, groupByID, subgroupByID, subgroupToGroupID, err := imp.importMetadata(ctx, meta, &stats)
 	if err != nil {
 		return stats, fmt.Errorf("import metadata: %w", err)
 	}
@@ -120,7 +120,7 @@ func Sync(ctx context.Context, cfg Config) (Stats, error) {
 		stats.Schedules++
 
 		// Import this single schedule in its own transaction
-		if err := imp.importSingleSchedule(ctx, source, schedule, &stats, groupByID, teacherByID, subgroupToGroupID); err != nil {
+		if err := imp.importSingleSchedule(ctx, source, schedule, &stats, groupByID, subgroupByID, teacherByID, subgroupToGroupID); err != nil {
 			if cfg.Logger != nil {
 				cfg.Logger.Warn("failed to import single schedule", zap.String("source", source.Name), zap.Error(err))
 			}
@@ -226,15 +226,23 @@ type suruzStudyForm struct {
 }
 
 type groupMetadata struct {
-	SourceGroupID  int
-	FacultyID      int
-	FacultyName    string
-	CourseID       int
-	CourseName     string
-	StudyFormID    int
-	StudyFormName  string
-	EducationLevel string
-	IsMagistracy   bool
+	SourceGroupID    int
+	SourceSubgroupID int
+	IsSubgroup       bool
+	ParentGroupID    uuid.UUID
+	FacultyID        int
+	FacultyName      string
+	CourseID         int
+	CourseName       string
+	StudyFormID      int
+	StudyFormName    string
+	EducationLevel   string
+	IsMagistracy     bool
+}
+
+type scheduleTarget struct {
+	ID         int
+	IsSubgroup bool
 }
 
 type scheduleData struct {
@@ -441,28 +449,95 @@ func (b groupMetadataBuilder) fromGroup(group suruzGroup) groupMetadata {
 	return meta
 }
 
-func (i *importer) importMetadata(ctx context.Context, meta groupsData, stats *Stats) (map[int]string, map[int]string, map[int]int, error) {
+func (b groupMetadataBuilder) fromSubgroup(subgroup suruzSubgroup, parentID uuid.UUID) groupMetadata {
+	meta := groupMetadata{
+		SourceGroupID:    subgroup.GroupID,
+		SourceSubgroupID: subgroup.ID,
+		IsSubgroup:       true,
+		ParentGroupID:    parentID,
+		FacultyID:        subgroup.FacultyID,
+		CourseID:         subgroup.CourseID,
+		StudyFormID:      subgroup.StudyFormID,
+	}
+	if faculty, ok := b.faculties[subgroup.FacultyID]; ok {
+		meta.FacultyName = strings.TrimSpace(faculty.Title)
+		meta.IsMagistracy = faculty.IsMagistrate
+		if faculty.IsMagistrate {
+			meta.EducationLevel = "MASTER"
+		} else {
+			meta.EducationLevel = "BACHELOR"
+		}
+	}
+	if course, ok := b.courses[subgroup.CourseID]; ok {
+		meta.CourseName = strings.TrimSpace(course.Title)
+	}
+	if studyForm, ok := b.studyForms[subgroup.StudyFormID]; ok {
+		meta.StudyFormName = strings.TrimSpace(studyForm.Title)
+	}
+	return meta
+}
+
+func (i *importer) importMetadata(ctx context.Context, meta groupsData, stats *Stats) (map[int]string, map[int]string, map[int]string, map[int]int, error) {
 	tx, err := i.db.Begin(ctx)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
 	defer tx.Rollback(ctx)
 
 	if _, err := tx.Exec(ctx, `INSERT INTO public.filial (id) VALUES ($1) ON CONFLICT (id) DO NOTHING`, i.filialID); err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
 
 	metadataBuilder := newGroupMetadataBuilder(meta)
+	groupUUIDByAPIID := make(map[int]uuid.UUID)
 	for _, group := range meta.Groups {
 		name := group.displayName()
 		if name == "" || isExamGroupName(name) {
 			continue
 		}
 		groupMeta := metadataBuilder.fromGroup(group)
-		if _, err := i.ensureGroup(ctx, tx, name, &groupMeta); err != nil {
-			return nil, nil, nil, err
+		id, err := i.ensureGroup(ctx, tx, name, &groupMeta)
+		if err != nil {
+			return nil, nil, nil, nil, err
 		}
+		groupUUIDByAPIID[group.ID] = id
 		stats.Groups++
+	}
+
+	groupByID := make(map[int]string, len(meta.Groups))
+	for _, group := range meta.Groups {
+		groupByID[group.ID] = group.displayName()
+	}
+
+	subgroupByID := make(map[int]string)
+	for _, subgroup := range meta.Subgroups {
+		parentID := groupUUIDByAPIID[subgroup.GroupID]
+		name := subgroup.displayName()
+		if name == "" || parentID == uuid.Nil {
+			continue
+		}
+		subgroupMeta := metadataBuilder.fromSubgroup(subgroup, parentID)
+		if _, err := i.ensureGroup(ctx, tx, name, &subgroupMeta); err != nil {
+			return nil, nil, nil, nil, err
+		}
+		subgroupByID[subgroup.ID] = name
+	}
+	for _, group := range meta.Groups {
+		parentID := groupUUIDByAPIID[group.ID]
+		for _, subgroup := range group.Subgroups {
+			name := subgroup.displayName()
+			if name == "" || parentID == uuid.Nil {
+				continue
+			}
+			if subgroup.GroupID == 0 {
+				subgroup.GroupID = group.ID
+			}
+			subgroupMeta := metadataBuilder.fromSubgroup(subgroup, parentID)
+			if _, err := i.ensureGroup(ctx, tx, name, &subgroupMeta); err != nil {
+				return nil, nil, nil, nil, err
+			}
+			subgroupByID[subgroup.ID] = name
+		}
 	}
 
 	teacherByID := make(map[int]string, len(meta.Teachers))
@@ -473,14 +548,9 @@ func (i *importer) importMetadata(ctx context.Context, meta groupsData, stats *S
 		}
 		teacherByID[teacher.ID] = name
 		if _, err := i.ensureTeacher(ctx, tx, name, teacher.Position); err != nil {
-			return nil, nil, nil, err
+			return nil, nil, nil, nil, err
 		}
 		stats.Teachers++
-	}
-
-	groupByID := make(map[int]string, len(meta.Groups))
-	for _, group := range meta.Groups {
-		groupByID[group.ID] = group.displayName()
 	}
 
 	subgroupToGroupID := make(map[int]int)
@@ -502,13 +572,13 @@ func (i *importer) importMetadata(ctx context.Context, meta groupsData, stats *S
 	}
 
 	if err := tx.Commit(ctx); err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
 
-	return teacherByID, groupByID, subgroupToGroupID, nil
+	return teacherByID, groupByID, subgroupByID, subgroupToGroupID, nil
 }
 
-func (i *importer) importSingleSchedule(ctx context.Context, source scheduleSource, data scheduleData, stats *Stats, groupByID map[int]string, teacherByID map[int]string, subgroupToGroupID map[int]int) error {
+func (i *importer) importSingleSchedule(ctx context.Context, source scheduleSource, data scheduleData, stats *Stats, groupByID map[int]string, subgroupByID map[int]string, teacherByID map[int]string, subgroupToGroupID map[int]int) error {
 	tx, err := i.db.Begin(ctx)
 	if err != nil {
 		return err
@@ -535,22 +605,23 @@ func (i *importer) importSingleSchedule(ctx context.Context, source scheduleSour
 	}
 
 	for _, event := range data.Events {
-		groups := eventGroups[event.ID]
+		targets := make([]scheduleTarget, 0)
+		for _, groupID := range eventGroups[event.ID] {
+			targets = append(targets, scheduleTarget{ID: groupID})
+		}
 		for _, subgroupID := range eventSubgroups[event.ID] {
-			if groupID := subgroupToGroupID[subgroupID]; groupID > 0 {
-				groups = append(groups, groupID)
-			}
+			targets = append(targets, scheduleTarget{ID: subgroupID, IsSubgroup: true})
 		}
-		if len(groups) == 0 {
+		if len(targets) == 0 {
 			if source.Param == "group_id" {
-				groups = []int{source.ID}
-			} else if groupID := subgroupToGroupID[source.ID]; groupID > 0 {
-				groups = []int{groupID}
+				targets = []scheduleTarget{{ID: source.ID}}
+			} else if source.Param == "subgroup_id" {
+				targets = []scheduleTarget{{ID: source.ID, IsSubgroup: true}}
 			}
 		}
-		groups = uniqueInts(groups)
+		targets = uniqueTargets(targets)
 
-		created, existing, err := i.importEvent(ctx, tx, termID, event, groups, eventTeachers[event.ID], groupByID, teacherByID)
+		created, existing, err := i.importEvent(ctx, tx, termID, event, targets, eventTeachers[event.ID], groupByID, subgroupByID, teacherByID)
 		if err != nil {
 			return err
 		}
@@ -562,7 +633,7 @@ func (i *importer) importSingleSchedule(ctx context.Context, source scheduleSour
 	return tx.Commit(ctx)
 }
 
-func (i *importer) importEvent(ctx context.Context, tx pgx.Tx, termID uuid.UUID, event suruzEvent, groupIDs []int, teacherIDs []int, groupByID map[int]string, teacherByID map[int]string) (int, int, error) {
+func (i *importer) importEvent(ctx context.Context, tx pgx.Tx, termID uuid.UUID, event suruzEvent, targets []scheduleTarget, teacherIDs []int, groupByID map[int]string, subgroupByID map[int]string, teacherByID map[int]string) (int, int, error) {
 	subjectName := strings.TrimSpace(event.Title)
 	if subjectName == "" {
 		return 0, 0, nil
@@ -624,8 +695,11 @@ func (i *importer) importEvent(ctx context.Context, tx pgx.Tx, termID uuid.UUID,
 
 	created := 0
 	existing := 0
-	for _, apiGroupID := range groupIDs {
-		groupName := groupByID[apiGroupID]
+	for _, target := range targets {
+		groupName := groupByID[target.ID]
+		if target.IsSubgroup {
+			groupName = subgroupByID[target.ID]
+		}
 		if groupName == "" {
 			continue
 		}
@@ -681,12 +755,22 @@ func cleanSuruzGroupName(name string) string {
 	if underscore == -1 || underscore == len(name)-1 {
 		return name
 	}
-	for _, r := range name[underscore+1:] {
+	suffix := name[underscore+1:]
+	digitsEnd := 0
+	for _, r := range suffix {
 		if r < '0' || r > '9' {
-			return name
+			break
 		}
+		digitsEnd++
 	}
-	return strings.TrimSpace(name[:underscore])
+	if digitsEnd == 0 {
+		return name
+	}
+	rest := suffix[digitsEnd:]
+	if rest != "" && rest != ")" {
+		return name
+	}
+	return strings.TrimSpace(name[:underscore] + rest)
 }
 
 func (i *importer) ensureTerm(ctx context.Context, tx pgx.Tx, startsOn, endsOn time.Time) (uuid.UUID, error) {
@@ -730,7 +814,8 @@ RETURNING id
 }
 
 func (i *importer) ensureGroup(ctx context.Context, tx pgx.Tx, name string, meta *groupMetadata) (uuid.UUID, error) {
-	if id, ok := i.groups[name]; ok {
+	cacheKey := groupCacheKey(name, meta)
+	if id, ok := i.groups[cacheKey]; ok {
 		if meta != nil {
 			if err := i.updateGroupMetadata(ctx, tx, id, *meta); err != nil {
 				return uuid.Nil, err
@@ -739,8 +824,8 @@ func (i *importer) ensureGroup(ctx context.Context, tx pgx.Tx, name string, meta
 		return id, nil
 	}
 	var id uuid.UUID
-	if meta != nil && meta.SourceGroupID > 0 {
-		err := tx.QueryRow(ctx, `SELECT id FROM public.edu_group WHERE filial_id = $1 AND source = 'suruz' AND source_group_id = $2 LIMIT 1`, i.filialID, meta.SourceGroupID).Scan(&id)
+	if meta != nil && meta.SourceSubgroupID > 0 {
+		err := tx.QueryRow(ctx, `SELECT id FROM public.edu_group WHERE filial_id = $1 AND source = 'suruz' AND source_subgroup_id = $2 LIMIT 1`, i.filialID, meta.SourceSubgroupID).Scan(&id)
 		if err != nil && err != pgx.ErrNoRows {
 			return uuid.Nil, err
 		}
@@ -748,23 +833,36 @@ func (i *importer) ensureGroup(ctx context.Context, tx pgx.Tx, name string, meta
 			if err := i.updateGroupNameAndMetadata(ctx, tx, id, name, *meta); err != nil {
 				return uuid.Nil, err
 			}
-			i.groups[name] = id
+			i.groups[cacheKey] = id
 			return id, nil
 		}
 	}
-	err := tx.QueryRow(ctx, `SELECT id FROM public.edu_group WHERE filial_id = $1 AND name = $2 LIMIT 1`, i.filialID, name).Scan(&id)
+	if meta != nil && meta.SourceGroupID > 0 && !meta.IsSubgroup {
+		err := tx.QueryRow(ctx, `SELECT id FROM public.edu_group WHERE filial_id = $1 AND source = 'suruz' AND source_group_id = $2 AND is_subgroup = false LIMIT 1`, i.filialID, meta.SourceGroupID).Scan(&id)
+		if err != nil && err != pgx.ErrNoRows {
+			return uuid.Nil, err
+		}
+		if err == nil {
+			if err := i.updateGroupNameAndMetadata(ctx, tx, id, name, *meta); err != nil {
+				return uuid.Nil, err
+			}
+			i.groups[cacheKey] = id
+			return id, nil
+		}
+	}
+	err := tx.QueryRow(ctx, `SELECT id FROM public.edu_group WHERE filial_id = $1 AND name = $2 AND is_subgroup = false LIMIT 1`, i.filialID, name).Scan(&id)
 	if err == pgx.ErrNoRows {
 		if meta != nil {
 			err = tx.QueryRow(ctx, `
 INSERT INTO public.edu_group (
-	filial_id, name, source, source_group_id, faculty_id, faculty_name, course_id, course_name,
+	filial_id, parent_group_id, name, source, source_group_id, source_subgroup_id, is_subgroup, faculty_id, faculty_name, course_id, course_name,
 	study_form_id, study_form_name, education_level, is_magistracy
 ) VALUES (
-	$1, $2, 'suruz', $3, NULLIF($4, 0), NULLIF($5, ''), NULLIF($6, 0), NULLIF($7, ''),
-	NULLIF($8, 0), NULLIF($9, ''), NULLIF($10, ''), $11
+	$1, NULLIF($2, '00000000-0000-0000-0000-000000000000'::uuid), $3, 'suruz', CASE WHEN $6 THEN NULL ELSE NULLIF($4, 0) END, NULLIF($5, 0), $6, NULLIF($7, 0), NULLIF($8, ''), NULLIF($9, 0), NULLIF($10, ''),
+	NULLIF($11, 0), NULLIF($12, ''), NULLIF($13, ''), $14
 )
 RETURNING id
-`, i.filialID, name, meta.SourceGroupID, meta.FacultyID, meta.FacultyName, meta.CourseID, meta.CourseName, meta.StudyFormID, meta.StudyFormName, meta.EducationLevel, meta.IsMagistracy).Scan(&id)
+`, i.filialID, meta.ParentGroupID, name, meta.SourceGroupID, meta.SourceSubgroupID, meta.IsSubgroup, meta.FacultyID, meta.FacultyName, meta.CourseID, meta.CourseName, meta.StudyFormID, meta.StudyFormName, meta.EducationLevel, meta.IsMagistracy).Scan(&id)
 		} else {
 			err = tx.QueryRow(ctx, `INSERT INTO public.edu_group (filial_id, name) VALUES ($1, $2) RETURNING id`, i.filialID, name).Scan(&id)
 		}
@@ -777,7 +875,7 @@ RETURNING id
 			return uuid.Nil, err
 		}
 	}
-	i.groups[name] = id
+	i.groups[cacheKey] = id
 	return id, nil
 }
 
@@ -785,19 +883,22 @@ func (i *importer) updateGroupNameAndMetadata(ctx context.Context, tx pgx.Tx, id
 	_, err := tx.Exec(ctx, `
 UPDATE public.edu_group
 SET name = $2,
+    parent_group_id = NULLIF($3, '00000000-0000-0000-0000-000000000000'::uuid),
     source = 'suruz',
-    source_group_id = $3,
-    faculty_id = NULLIF($4, 0),
-    faculty_name = NULLIF($5, ''),
-    course_id = NULLIF($6, 0),
-    course_name = NULLIF($7, ''),
-    study_form_id = NULLIF($8, 0),
-    study_form_name = NULLIF($9, ''),
-    education_level = NULLIF($10, ''),
-    is_magistracy = $11,
+    source_group_id = CASE WHEN $6 THEN NULL ELSE NULLIF($4, 0) END,
+    source_subgroup_id = NULLIF($5, 0),
+    is_subgroup = $6,
+    faculty_id = NULLIF($7, 0),
+    faculty_name = NULLIF($8, ''),
+    course_id = NULLIF($9, 0),
+    course_name = NULLIF($10, ''),
+    study_form_id = NULLIF($11, 0),
+    study_form_name = NULLIF($12, ''),
+    education_level = NULLIF($13, ''),
+    is_magistracy = $14,
     updated_at = now()
 WHERE id = $1
-`, id, name, meta.SourceGroupID, meta.FacultyID, meta.FacultyName, meta.CourseID, meta.CourseName, meta.StudyFormID, meta.StudyFormName, meta.EducationLevel, meta.IsMagistracy)
+`, id, name, meta.ParentGroupID, meta.SourceGroupID, meta.SourceSubgroupID, meta.IsSubgroup, meta.FacultyID, meta.FacultyName, meta.CourseID, meta.CourseName, meta.StudyFormID, meta.StudyFormName, meta.EducationLevel, meta.IsMagistracy)
 	return err
 }
 
@@ -805,19 +906,32 @@ func (i *importer) updateGroupMetadata(ctx context.Context, tx pgx.Tx, id uuid.U
 	_, err := tx.Exec(ctx, `
 UPDATE public.edu_group
 SET source = 'suruz',
-    source_group_id = $2,
-    faculty_id = NULLIF($3, 0),
-    faculty_name = NULLIF($4, ''),
-    course_id = NULLIF($5, 0),
-    course_name = NULLIF($6, ''),
-    study_form_id = NULLIF($7, 0),
-    study_form_name = NULLIF($8, ''),
-    education_level = NULLIF($9, ''),
-    is_magistracy = $10,
+    parent_group_id = NULLIF($2, '00000000-0000-0000-0000-000000000000'::uuid),
+    source_group_id = CASE WHEN $5 THEN NULL ELSE NULLIF($3, 0) END,
+    source_subgroup_id = NULLIF($4, 0),
+    is_subgroup = $5,
+    faculty_id = NULLIF($6, 0),
+    faculty_name = NULLIF($7, ''),
+    course_id = NULLIF($8, 0),
+    course_name = NULLIF($9, ''),
+    study_form_id = NULLIF($10, 0),
+    study_form_name = NULLIF($11, ''),
+    education_level = NULLIF($12, ''),
+    is_magistracy = $13,
     updated_at = now()
 WHERE id = $1
-`, id, meta.SourceGroupID, meta.FacultyID, meta.FacultyName, meta.CourseID, meta.CourseName, meta.StudyFormID, meta.StudyFormName, meta.EducationLevel, meta.IsMagistracy)
+`, id, meta.ParentGroupID, meta.SourceGroupID, meta.SourceSubgroupID, meta.IsSubgroup, meta.FacultyID, meta.FacultyName, meta.CourseID, meta.CourseName, meta.StudyFormID, meta.StudyFormName, meta.EducationLevel, meta.IsMagistracy)
 	return err
+}
+
+func groupCacheKey(name string, meta *groupMetadata) string {
+	if meta != nil && meta.SourceSubgroupID > 0 {
+		return fmt.Sprintf("subgroup:%d", meta.SourceSubgroupID)
+	}
+	if meta != nil && meta.SourceGroupID > 0 && !meta.IsSubgroup {
+		return fmt.Sprintf("group:%d", meta.SourceGroupID)
+	}
+	return "name:" + name
 }
 
 func (i *importer) ensureSubject(ctx context.Context, tx pgx.Tx, name string) (uuid.UUID, error) {
@@ -1102,6 +1216,22 @@ func uniqueInts(values []int) []int {
 	result := make([]int, 0, len(values))
 	for _, value := range values {
 		if value == 0 {
+			continue
+		}
+		if _, ok := seen[value]; ok {
+			continue
+		}
+		seen[value] = struct{}{}
+		result = append(result, value)
+	}
+	return result
+}
+
+func uniqueTargets(values []scheduleTarget) []scheduleTarget {
+	seen := make(map[scheduleTarget]struct{}, len(values))
+	result := make([]scheduleTarget, 0, len(values))
+	for _, value := range values {
+		if value.ID == 0 {
 			continue
 		}
 		if _, ok := seen[value]; ok {

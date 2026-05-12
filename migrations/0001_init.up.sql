@@ -112,9 +112,12 @@ CREATE TABLE academic_term (
 CREATE TABLE edu_group (
     id             uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
     filial_id      uuid NOT NULL REFERENCES filial(id) ON DELETE CASCADE,
+    parent_group_id uuid REFERENCES edu_group(id) ON DELETE CASCADE,
     name           varchar NOT NULL,
     source         varchar,
     source_group_id int,
+    source_subgroup_id int,
+    is_subgroup    boolean NOT NULL DEFAULT false,
     faculty_id     int,
     faculty_name   varchar,
     course_id      int,
@@ -125,7 +128,8 @@ CREATE TABLE edu_group (
     is_magistracy  boolean NOT NULL DEFAULT false,
     created_at     timestamp NOT NULL DEFAULT now(),
     updated_at     timestamp NOT NULL DEFAULT now(),
-    CONSTRAINT edu_group_source_unique UNIQUE (filial_id, source, source_group_id)
+    CONSTRAINT edu_group_source_unique UNIQUE (filial_id, source, source_group_id),
+    CONSTRAINT edu_group_source_subgroup_unique UNIQUE (filial_id, source, source_subgroup_id)
 );
 
 CREATE TABLE timetable_entry (

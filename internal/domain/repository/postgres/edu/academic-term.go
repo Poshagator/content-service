@@ -120,11 +120,14 @@ SELECT
     at.id, at.filial_id, at.name, at.starts_on, at.ends_on, at.week_start
 FROM
     public.academic_term at
+JOIN
+    public.edu_group selected_group ON selected_group.id = $1
 WHERE
     EXISTS (
         SELECT 1
         FROM public.timetable_entry te
-        WHERE te.term_id = at.id AND te.group_id = $1
+        WHERE te.term_id = at.id
+          AND (te.group_id = $1 OR te.group_id = selected_group.parent_group_id)
     )
 ORDER BY
     CASE

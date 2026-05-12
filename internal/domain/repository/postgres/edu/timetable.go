@@ -25,6 +25,8 @@ SELECT
     COALESCE(te.comment, '') AS comment
 FROM 
     public.timetable_entry te
+JOIN
+    public.edu_group selected_group ON selected_group.id = $1
 JOIN 
     public.edu_subject s ON te.subject_id = s.id
 LEFT JOIN 
@@ -34,7 +36,7 @@ LEFT JOIN
 LEFT JOIN 
     public.room r ON te.classroom_id = r.id
 WHERE 
-    te.group_id = $1
+    (te.group_id = $1 OR te.group_id = selected_group.parent_group_id)
     AND ($2::uuid IS NULL OR te.term_id = $2)
 ORDER BY 
     COALESCE(te.occurs_on, '9999-12-31'::date), te.day_of_week, te.starts_at
