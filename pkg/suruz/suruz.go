@@ -186,9 +186,10 @@ type suruzTeacher struct {
 }
 
 type scheduleData struct {
-	Events        []suruzEvent        `json:"events"`
-	EventGroups   []suruzEventGroup   `json:"event_groups"`
-	EventTeachers []suruzEventTeacher `json:"event_teachers"`
+	Events         []suruzEvent         `json:"events"`
+	EventGroups    []suruzEventGroup    `json:"event_groups"`
+	EventSubgroups []suruzEventSubgroup `json:"event_subgroups"`
+	EventTeachers  []suruzEventTeacher  `json:"event_teachers"`
 }
 
 type fetchedSchedule struct {
@@ -200,17 +201,27 @@ type suruzEvent struct {
 	ID           int64  `json:"id"`
 	Title        string `json:"title"`
 	StartDateISO string `json:"start_date_iso"`
+	EndDateISO   string `json:"end_date_iso"`
 	Lesson       string `json:"lesson"`
+	LessonEnd    string `json:"lesson_end"`
+	Recurrence   string `json:"recurrence"`
 	Room         string `json:"room"`
 	Weekday      string `json:"weekday"`
 	CustomTime   string `json:"custom_time"`
 	TeacherName  string `json:"teacher_name"`
+	Comment      string `json:"comment"`
+	Place        string `json:"place"`
 	Exam         bool   `json:"exam"`
 }
 
 type suruzEventGroup struct {
 	EventID int64 `json:"event_id"`
 	GroupID int   `json:"group_id"`
+}
+
+type suruzEventSubgroup struct {
+	EventID    int64 `json:"event_id"`
+	SubgroupID int   `json:"subgroup_id"`
 }
 
 type suruzEventTeacher struct {
@@ -404,6 +415,10 @@ func (i *importer) importSingleSchedule(ctx context.Context, source scheduleSour
 	for _, link := range data.EventGroups {
 		eventGroups[link.EventID] = append(eventGroups[link.EventID], link.GroupID)
 	}
+	eventSubgroups := make(map[int64][]int)
+	for _, link := range data.EventSubgroups {
+		eventSubgroups[link.EventID] = append(eventSubgroups[link.EventID], link.SubgroupID)
+	}
 	eventTeachers := make(map[int64][]int)
 	for _, link := range data.EventTeachers {
 		eventTeachers[link.EventID] = append(eventTeachers[link.EventID], link.TeacherID)
@@ -411,6 +426,11 @@ func (i *importer) importSingleSchedule(ctx context.Context, source scheduleSour
 
 	for _, event := range data.Events {
 		groups := eventGroups[event.ID]
+		for _, subgroupID := range eventSubgroups[event.ID] {
+			if groupID := subgroupToGroupID[subgroupID]; groupID > 0 {
+				groups = append(groups, groupID)
+			}
+		}
 		if len(groups) == 0 {
 			if source.Param == "group_id" {
 				groups = []int{source.ID}
@@ -418,6 +438,7 @@ func (i *importer) importSingleSchedule(ctx context.Context, source scheduleSour
 				groups = []int{groupID}
 			}
 		}
+		groups = uniqueInts(groups)
 
 		created, existing, err := i.importEvent(ctx, tx, termID, event, groups, eventTeachers[event.ID], groupByID, teacherByID)
 		if err != nil {
@@ -441,9 +462,16 @@ func (i *importer) importEvent(ctx context.Context, tx pgx.Tx, termID uuid.UUID,
 	if err != nil {
 		return 0, 0, nil
 	}
-	startsAt, endsAt, err := parseLessonTime(event.CustomTime, event.Lesson)
+	startsAt, endsAt, err := parseLessonTime(event.CustomTime, event.Lesson, event.LessonEnd)
 	if err != nil {
 		return 0, 0, nil
+	}
+	weekType := eventWeekType(event, startDate)
+	var occursOn *time.Time
+	if isExactEvent(event) {
+		day := dateOnly(startDate)
+		occursOn = &day
+		weekType = "ONCE"
 	}
 
 	subjectID, err := i.ensureSubject(ctx, tx, subjectName)
@@ -497,7 +525,7 @@ func (i *importer) importEvent(ctx context.Context, tx pgx.Tx, termID uuid.UUID,
 		if err != nil {
 			return 0, 0, err
 		}
-		wasCreated, err := i.ensureTimetableEntry(ctx, tx, termID, groupID, subjectID, teacherID, roomID, postgresDayOfWeek(startDate), startsAt, endsAt)
+		wasCreated, err := i.ensureTimetableEntry(ctx, tx, termID, groupID, subjectID, teacherID, roomID, event.ID, postgresDayOfWeek(startDate), occursOn, startsAt, endsAt, weekType, event.Exam, eventComment(event))
 		if err != nil {
 			return 0, 0, err
 		}
@@ -661,38 +689,29 @@ RETURNING id
 	return staffID, nil
 }
 
-func (i *importer) ensureTimetableEntry(ctx context.Context, tx pgx.Tx, termID, groupID, subjectID uuid.UUID, teacherID, roomID *uuid.UUID, dayOfWeek int, startsAt, endsAt string) (bool, error) {
-	var id uuid.UUID
+func (i *importer) ensureTimetableEntry(ctx context.Context, tx pgx.Tx, termID, groupID, subjectID uuid.UUID, teacherID, roomID *uuid.UUID, sourceEventID int64, dayOfWeek int, occursOn *time.Time, startsAt, endsAt, weekType string, isExam bool, comment string) (bool, error) {
+	var created bool
 	err := tx.QueryRow(ctx, `
-SELECT id
-FROM public.timetable_entry
-WHERE term_id = $1
-  AND group_id = $2
-  AND subject_id = $3
-  AND teacher_id IS NOT DISTINCT FROM $4
-  AND classroom_id IS NOT DISTINCT FROM $5
-  AND day_of_week = $6
-  AND starts_at = $7::time
-  AND ends_at = $8::time
-  AND week_type = 'ALL'
-LIMIT 1
-`, termID, groupID, subjectID, teacherID, roomID, dayOfWeek, startsAt, endsAt).Scan(&id)
-	if err == nil {
-		return false, nil
-	}
-	if err != pgx.ErrNoRows {
-		return false, err
-	}
-
-	err = tx.QueryRow(ctx, `
 INSERT INTO public.timetable_entry (
-	term_id, group_id, subject_id, teacher_id, classroom_id, day_of_week, starts_at, ends_at, week_type
+	term_id, group_id, subject_id, teacher_id, classroom_id, day_of_week, occurs_on, starts_at, ends_at, week_type, source, source_event_id, is_exam, comment
 ) VALUES (
-	$1, $2, $3, $4, $5, $6, $7::time, $8::time, 'ALL'
+	$1, $2, $3, $4, $5, $6, $7, $8::time, $9::time, $10, 'suruz', $11, $12, $13
 )
-RETURNING id
-`, termID, groupID, subjectID, teacherID, roomID, dayOfWeek, startsAt, endsAt).Scan(&id)
-	return true, err
+ON CONFLICT ON CONSTRAINT timetable_entry_source_event_unique DO UPDATE SET
+	subject_id = EXCLUDED.subject_id,
+	teacher_id = EXCLUDED.teacher_id,
+	classroom_id = EXCLUDED.classroom_id,
+	day_of_week = EXCLUDED.day_of_week,
+	occurs_on = EXCLUDED.occurs_on,
+	starts_at = EXCLUDED.starts_at,
+	ends_at = EXCLUDED.ends_at,
+	week_type = EXCLUDED.week_type,
+	is_exam = EXCLUDED.is_exam,
+	comment = EXCLUDED.comment,
+	updated_at = now()
+RETURNING xmax = 0
+`, termID, groupID, subjectID, teacherID, roomID, dayOfWeek, occursOn, startsAt, endsAt, weekType, sourceEventID, isExam, nullIfEmpty(comment)).Scan(&created)
+	return created, err
 }
 
 func singleScheduleDateRange(data scheduleData) (time.Time, time.Time) {
@@ -724,31 +743,70 @@ func parseAPIDate(raw string) (time.Time, error) {
 	return time.Parse("2006-01-02", raw)
 }
 
-func parseLessonTime(customTime, lesson string) (string, string, error) {
+func parseLessonTime(customTime, lesson, lessonEnd string) (string, string, error) {
 	parts := strings.Fields(strings.ReplaceAll(customTime, "\\n", "\n"))
 	if len(parts) >= 2 && isClock(parts[0]) && isClock(parts[1]) {
 		return normalizeClock(parts[0]), normalizeClock(parts[1]), nil
 	}
 
-	switch strings.TrimSpace(lesson) {
-	case "1":
-		return "09:00", "10:20", nil
-	case "2":
-		return "10:35", "11:55", nil
-	case "3":
-		return "12:10", "13:30", nil
-	case "4":
-		return "14:30", "15:50", nil
-	case "5":
-		return "16:05", "17:25", nil
-	case "6":
-		return "17:40", "19:00", nil
-	case "7":
-		return "19:10", "20:30", nil
-	case "8":
-		return "20:40", "22:00", nil
-	default:
+	start, ok := lessonStart(strings.TrimSpace(lesson))
+	if !ok {
 		return "", "", fmt.Errorf("no lesson time")
+	}
+	endLesson := strings.TrimSpace(lessonEnd)
+	if endLesson == "" {
+		endLesson = strings.TrimSpace(lesson)
+	}
+	end, ok := lessonEndTime(endLesson)
+	if !ok {
+		return "", "", fmt.Errorf("no lesson end time")
+	}
+	return start, end, nil
+}
+
+func lessonStart(lesson string) (string, bool) {
+	switch lesson {
+	case "1":
+		return "09:00", true
+	case "2":
+		return "10:35", true
+	case "3":
+		return "12:10", true
+	case "4":
+		return "14:30", true
+	case "5":
+		return "16:05", true
+	case "6":
+		return "17:40", true
+	case "7":
+		return "19:10", true
+	case "8":
+		return "20:40", true
+	default:
+		return "", false
+	}
+}
+
+func lessonEndTime(lesson string) (string, bool) {
+	switch lesson {
+	case "1":
+		return "10:20", true
+	case "2":
+		return "11:55", true
+	case "3":
+		return "13:30", true
+	case "4":
+		return "15:50", true
+	case "5":
+		return "17:25", true
+	case "6":
+		return "19:00", true
+	case "7":
+		return "20:30", true
+	case "8":
+		return "22:00", true
+	default:
+		return "", false
 	}
 }
 
@@ -757,6 +815,62 @@ func postgresDayOfWeek(date time.Time) int {
 		return 7
 	}
 	return int(date.Weekday())
+}
+
+func dateOnly(t time.Time) time.Time {
+	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
+}
+
+func isExactEvent(event suruzEvent) bool {
+	recurrence := strings.ToUpper(strings.TrimSpace(event.Recurrence))
+	return event.Exam || recurrence == "ONCE" || recurrence == "NONE" || recurrence == "SINGLE"
+}
+
+func eventWeekType(event suruzEvent, startDate time.Time) string {
+	recurrence := strings.ToUpper(strings.TrimSpace(event.Recurrence))
+	switch {
+	case recurrence == "", recurrence == "ALL", recurrence == "EVERY_WEEK", recurrence == "WEEKLY":
+		return "ALL"
+	case strings.Contains(recurrence, "ODD"):
+		return "ODD"
+	case strings.Contains(recurrence, "EVEN"):
+		return "EVEN"
+	case strings.Contains(recurrence, "TWO") || strings.Contains(recurrence, "2"):
+		_, week := startDate.ISOWeek()
+		if week%2 == 1 {
+			return "ODD"
+		}
+		return "EVEN"
+	default:
+		return "ALL"
+	}
+}
+
+func eventComment(event suruzEvent) string {
+	parts := make([]string, 0, 2)
+	if comment := strings.TrimSpace(event.Comment); comment != "" {
+		parts = append(parts, comment)
+	}
+	if place := strings.TrimSpace(event.Place); place != "" {
+		parts = append(parts, place)
+	}
+	return strings.Join(parts, "\n")
+}
+
+func uniqueInts(values []int) []int {
+	seen := make(map[int]struct{}, len(values))
+	result := make([]int, 0, len(values))
+	for _, value := range values {
+		if value == 0 {
+			continue
+		}
+		if _, ok := seen[value]; ok {
+			continue
+		}
+		seen[value] = struct{}{}
+		result = append(result, value)
+	}
+	return result
 }
 
 func isClock(raw string) bool {

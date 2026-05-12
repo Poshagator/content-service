@@ -4,20 +4,23 @@ import (
 	"context"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
-	"go.uber.org/zap"
 	"github.com/poshagator/content-service/internal/domain/entities/edu"
+	"go.uber.org/zap"
 )
 
 const qGetTimetable = `
 SELECT 
     te.id,
     te.day_of_week,
+    COALESCE(te.occurs_on::text, '') AS occurs_on,
     te.starts_at::text,
     te.ends_at::text,
     te.week_type,
     s.name as subject_name,
     trim(concat_ws(' ', p.last_name, p.first_name, p.middle_name)) as teacher_name,
-    COALESCE(r.room_number, r.name, '') as room_name
+    COALESCE(r.room_number, r.name, '') as room_name,
+    te.is_exam,
+    COALESCE(te.comment, '') AS comment
 FROM 
     public.timetable_entry te
 JOIN 
@@ -30,12 +33,21 @@ LEFT JOIN
     public.room r ON te.classroom_id = r.id
 WHERE 
     te.group_id = $1
+    AND ($2::uuid IS NULL OR te.term_id = $2)
 ORDER BY 
-    te.day_of_week, te.starts_at
+    COALESCE(te.occurs_on, '9999-12-31'::date), te.day_of_week, te.starts_at
 `
 
 func (r *Repository) GetTimetable(ctx context.Context, groupID uuid.UUID) ([]edu.TimetableEntry, error) {
-	rows, err := r.db.Query(ctx, qGetTimetable, groupID)
+	return r.getTimetable(ctx, groupID, nil)
+}
+
+func (r *Repository) GetTimetableByTerm(ctx context.Context, groupID uuid.UUID, termID uuid.UUID) ([]edu.TimetableEntry, error) {
+	return r.getTimetable(ctx, groupID, termID)
+}
+
+func (r *Repository) getTimetable(ctx context.Context, groupID uuid.UUID, termID any) ([]edu.TimetableEntry, error) {
+	rows, err := r.db.Query(ctx, qGetTimetable, groupID, termID)
 	if err != nil {
 		r.log.Error("failed to get timetable", zap.Error(err))
 		return nil, err

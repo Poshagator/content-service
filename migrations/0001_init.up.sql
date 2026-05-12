@@ -125,11 +125,17 @@ CREATE TABLE timetable_entry (
     teacher_id    uuid REFERENCES staff(id) ON DELETE SET NULL,
     classroom_id  uuid REFERENCES room(id) ON DELETE SET NULL,
     day_of_week   int  NOT NULL,
+    occurs_on     date,
     starts_at     time NOT NULL,
     ends_at       time NOT NULL,
     week_type     varchar NOT NULL DEFAULT 'ALL',
+    source         varchar,
+    source_event_id bigint,
+    is_exam       boolean NOT NULL DEFAULT false,
+    comment       varchar,
     created_at    timestamp NOT NULL DEFAULT now(),
-    updated_at    timestamp NOT NULL DEFAULT now()
+    updated_at    timestamp NOT NULL DEFAULT now(),
+    CONSTRAINT timetable_entry_source_event_unique UNIQUE (term_id, group_id, source, source_event_id)
 );
 
 CREATE TABLE timetable_exception (

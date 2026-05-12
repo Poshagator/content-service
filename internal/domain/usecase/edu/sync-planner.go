@@ -20,7 +20,7 @@ func (u *Usecase) SyncGroupScheduleToPlanner(ctx context.Context, userID string,
 	}
 
 	// 2. Get Timetable
-	timetable, err := u.repo.GetTimetable(ctx, groupID)
+	timetable, err := u.repo.GetTimetableByTerm(ctx, groupID, termID)
 	if err != nil {
 		return fmt.Errorf("get timetable: %w", err)
 	}
@@ -71,11 +71,14 @@ func (u *Usecase) SyncGroupScheduleToPlanner(ctx context.Context, userID string,
 		}
 
 		for _, entry := range timetable {
+			if entry.OccursOn != "" && entry.OccursOn != d.Format("2006-01-02") {
+				continue
+			}
 			if entry.DayOfWeek != weekday {
 				continue
 			}
-			// ALL means it happens every week
-			if entry.WeekType != "ALL" && entry.WeekType != currentWeekType {
+			// Exact Suruz events (exams, credits, one-off changes) are bound to OccursOn.
+			if entry.OccursOn == "" && entry.WeekType != "ALL" && entry.WeekType != currentWeekType {
 				continue
 			}
 
@@ -89,13 +92,21 @@ func (u *Usecase) SyncGroupScheduleToPlanner(ctx context.Context, userID string,
 				endTime = endTime[:5]
 			}
 
+			description := fmt.Sprintf("Преподаватель: %s\nАудитория: %s", entry.TeacherName, entry.RoomName)
+			if entry.IsExam {
+				description = "Экзамен\n" + description
+			}
+			if entry.Comment != "" {
+				description += "\n" + entry.Comment
+			}
+
 			tasks = append(tasks, &planner.ExternalTask{
 				ExternalId:  fmt.Sprintf("%s_%s", entry.ID, d.Format("2006-01-02")),
 				Date:        d.Format("2006-01-02"),
 				StartTime:   startTime,
 				EndTime:     endTime,
 				Title:       entry.SubjectName,
-				Description: fmt.Sprintf("Преподаватель: %s\nАудитория: %s", entry.TeacherName, entry.RoomName),
+				Description: description,
 				ActivityId:  activityID,
 				Action:      planner.SyncAction_SYNC_ACTION_UPSERT,
 			})
@@ -144,7 +155,7 @@ func (u *Usecase) UnsubscribeFromPlanner(ctx context.Context, userID string, gro
 	}
 
 	// 2. Get Timetable
-	timetable, err := u.repo.GetTimetable(ctx, groupID)
+	timetable, err := u.repo.GetTimetableByTerm(ctx, groupID, termID)
 	if err != nil {
 		return fmt.Errorf("get timetable: %w", err)
 	}
@@ -178,10 +189,13 @@ func (u *Usecase) UnsubscribeFromPlanner(ctx context.Context, userID string, gro
 		}
 
 		for _, entry := range timetable {
+			if entry.OccursOn != "" && entry.OccursOn != d.Format("2006-01-02") {
+				continue
+			}
 			if entry.DayOfWeek != weekday {
 				continue
 			}
-			if entry.WeekType != "ALL" && entry.WeekType != currentWeekType {
+			if entry.OccursOn == "" && entry.WeekType != "ALL" && entry.WeekType != currentWeekType {
 				continue
 			}
 
