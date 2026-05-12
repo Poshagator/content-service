@@ -161,16 +161,22 @@ type apiResponse[T any] struct {
 }
 
 type groupsData struct {
-	Groups    []suruzGroup    `json:"groups"`
-	Subgroups []suruzSubgroup `json:"subgroups"`
-	Teachers  []suruzTeacher  `json:"teachers"`
+	Faculties  []suruzFaculty   `json:"faculties"`
+	Courses    []suruzCourse    `json:"courses"`
+	StudyForms []suruzStudyForm `json:"study_forms"`
+	Groups     []suruzGroup     `json:"groups"`
+	Subgroups  []suruzSubgroup  `json:"subgroups"`
+	Teachers   []suruzTeacher   `json:"teachers"`
 }
 
 type suruzGroup struct {
-	ID        int             `json:"id"`
-	Title     string          `json:"title"`
-	Name      string          `json:"name"`
-	Subgroups []suruzSubgroup `json:"subgroups"`
+	ID          int             `json:"id"`
+	FacultyID   int             `json:"faculty_id"`
+	CourseID    int             `json:"course_id"`
+	StudyFormID int             `json:"study_form_id"`
+	Title       string          `json:"title"`
+	Name        string          `json:"name"`
+	Subgroups   []suruzSubgroup `json:"subgroups"`
 }
 
 func (g suruzGroup) displayName() string {
@@ -181,10 +187,13 @@ func (g suruzGroup) displayName() string {
 }
 
 type suruzSubgroup struct {
-	ID      int    `json:"id"`
-	GroupID int    `json:"group_id"`
-	Title   string `json:"title"`
-	Name    string `json:"name"`
+	ID          int    `json:"id"`
+	GroupID     int    `json:"group_id"`
+	FacultyID   int    `json:"faculty_id"`
+	CourseID    int    `json:"course_id"`
+	StudyFormID int    `json:"study_form_id"`
+	Title       string `json:"title"`
+	Name        string `json:"name"`
 }
 
 func (s suruzSubgroup) displayName() string {
@@ -198,6 +207,34 @@ type suruzTeacher struct {
 	ID       int    `json:"id"`
 	Name     string `json:"name"`
 	Position string `json:"position"`
+}
+
+type suruzFaculty struct {
+	ID           int    `json:"id"`
+	Title        string `json:"title"`
+	IsMagistrate bool   `json:"is_magistrate"`
+}
+
+type suruzCourse struct {
+	ID    int    `json:"id"`
+	Title string `json:"title"`
+}
+
+type suruzStudyForm struct {
+	ID    int    `json:"id"`
+	Title string `json:"title"`
+}
+
+type groupMetadata struct {
+	SourceGroupID  int
+	FacultyID      int
+	FacultyName    string
+	CourseID       int
+	CourseName     string
+	StudyFormID    int
+	StudyFormName  string
+	EducationLevel string
+	IsMagistracy   bool
 }
 
 type scheduleData struct {
@@ -355,6 +392,55 @@ func buildSources(meta groupsData, explicitIDs, sourceParam string) []scheduleSo
 	return sources
 }
 
+type groupMetadataBuilder struct {
+	faculties  map[int]suruzFaculty
+	courses    map[int]suruzCourse
+	studyForms map[int]suruzStudyForm
+}
+
+func newGroupMetadataBuilder(meta groupsData) groupMetadataBuilder {
+	builder := groupMetadataBuilder{
+		faculties:  make(map[int]suruzFaculty, len(meta.Faculties)),
+		courses:    make(map[int]suruzCourse, len(meta.Courses)),
+		studyForms: make(map[int]suruzStudyForm, len(meta.StudyForms)),
+	}
+	for _, faculty := range meta.Faculties {
+		builder.faculties[faculty.ID] = faculty
+	}
+	for _, course := range meta.Courses {
+		builder.courses[course.ID] = course
+	}
+	for _, studyForm := range meta.StudyForms {
+		builder.studyForms[studyForm.ID] = studyForm
+	}
+	return builder
+}
+
+func (b groupMetadataBuilder) fromGroup(group suruzGroup) groupMetadata {
+	meta := groupMetadata{
+		SourceGroupID: group.ID,
+		FacultyID:     group.FacultyID,
+		CourseID:      group.CourseID,
+		StudyFormID:   group.StudyFormID,
+	}
+	if faculty, ok := b.faculties[group.FacultyID]; ok {
+		meta.FacultyName = strings.TrimSpace(faculty.Title)
+		meta.IsMagistracy = faculty.IsMagistrate
+		if faculty.IsMagistrate {
+			meta.EducationLevel = "MASTER"
+		} else {
+			meta.EducationLevel = "BACHELOR"
+		}
+	}
+	if course, ok := b.courses[group.CourseID]; ok {
+		meta.CourseName = strings.TrimSpace(course.Title)
+	}
+	if studyForm, ok := b.studyForms[group.StudyFormID]; ok {
+		meta.StudyFormName = strings.TrimSpace(studyForm.Title)
+	}
+	return meta
+}
+
 func (i *importer) importMetadata(ctx context.Context, meta groupsData, stats *Stats) (map[int]string, map[int]string, map[int]int, error) {
 	tx, err := i.db.Begin(ctx)
 	if err != nil {
@@ -366,12 +452,14 @@ func (i *importer) importMetadata(ctx context.Context, meta groupsData, stats *S
 		return nil, nil, nil, err
 	}
 
+	metadataBuilder := newGroupMetadataBuilder(meta)
 	for _, group := range meta.Groups {
 		name := group.displayName()
 		if name == "" || isExamGroupName(name) {
 			continue
 		}
-		if _, err := i.ensureGroup(ctx, tx, name); err != nil {
+		groupMeta := metadataBuilder.fromGroup(group)
+		if _, err := i.ensureGroup(ctx, tx, name, &groupMeta); err != nil {
 			return nil, nil, nil, err
 		}
 		stats.Groups++
@@ -550,7 +638,7 @@ func (i *importer) importEvent(ctx context.Context, tx pgx.Tx, termID uuid.UUID,
 			}
 		}
 
-		groupID, err := i.ensureGroup(ctx, tx, groupName)
+		groupID, err := i.ensureGroup(ctx, tx, groupName, nil)
 		if err != nil {
 			return 0, 0, err
 		}
@@ -627,20 +715,95 @@ RETURNING id
 	return id, err
 }
 
-func (i *importer) ensureGroup(ctx context.Context, tx pgx.Tx, name string) (uuid.UUID, error) {
+func (i *importer) ensureGroup(ctx context.Context, tx pgx.Tx, name string, meta *groupMetadata) (uuid.UUID, error) {
 	if id, ok := i.groups[name]; ok {
+		if meta != nil {
+			if err := i.updateGroupMetadata(ctx, tx, id, *meta); err != nil {
+				return uuid.Nil, err
+			}
+		}
 		return id, nil
 	}
 	var id uuid.UUID
+	if meta != nil && meta.SourceGroupID > 0 {
+		err := tx.QueryRow(ctx, `SELECT id FROM public.edu_group WHERE filial_id = $1 AND source = 'suruz' AND source_group_id = $2 LIMIT 1`, i.filialID, meta.SourceGroupID).Scan(&id)
+		if err != nil && err != pgx.ErrNoRows {
+			return uuid.Nil, err
+		}
+		if err == nil {
+			if err := i.updateGroupNameAndMetadata(ctx, tx, id, name, *meta); err != nil {
+				return uuid.Nil, err
+			}
+			i.groups[name] = id
+			return id, nil
+		}
+	}
 	err := tx.QueryRow(ctx, `SELECT id FROM public.edu_group WHERE filial_id = $1 AND name = $2 LIMIT 1`, i.filialID, name).Scan(&id)
 	if err == pgx.ErrNoRows {
-		err = tx.QueryRow(ctx, `INSERT INTO public.edu_group (filial_id, name) VALUES ($1, $2) RETURNING id`, i.filialID, name).Scan(&id)
+		if meta != nil {
+			err = tx.QueryRow(ctx, `
+INSERT INTO public.edu_group (
+	filial_id, name, source, source_group_id, faculty_id, faculty_name, course_id, course_name,
+	study_form_id, study_form_name, education_level, is_magistracy
+) VALUES (
+	$1, $2, 'suruz', $3, NULLIF($4, 0), NULLIF($5, ''), NULLIF($6, 0), NULLIF($7, ''),
+	NULLIF($8, 0), NULLIF($9, ''), NULLIF($10, ''), $11
+)
+RETURNING id
+`, i.filialID, name, meta.SourceGroupID, meta.FacultyID, meta.FacultyName, meta.CourseID, meta.CourseName, meta.StudyFormID, meta.StudyFormName, meta.EducationLevel, meta.IsMagistracy).Scan(&id)
+		} else {
+			err = tx.QueryRow(ctx, `INSERT INTO public.edu_group (filial_id, name) VALUES ($1, $2) RETURNING id`, i.filialID, name).Scan(&id)
+		}
 	}
 	if err != nil {
 		return uuid.Nil, err
 	}
+	if meta != nil {
+		if err := i.updateGroupMetadata(ctx, tx, id, *meta); err != nil {
+			return uuid.Nil, err
+		}
+	}
 	i.groups[name] = id
 	return id, nil
+}
+
+func (i *importer) updateGroupNameAndMetadata(ctx context.Context, tx pgx.Tx, id uuid.UUID, name string, meta groupMetadata) error {
+	_, err := tx.Exec(ctx, `
+UPDATE public.edu_group
+SET name = $2,
+    source = 'suruz',
+    source_group_id = $3,
+    faculty_id = NULLIF($4, 0),
+    faculty_name = NULLIF($5, ''),
+    course_id = NULLIF($6, 0),
+    course_name = NULLIF($7, ''),
+    study_form_id = NULLIF($8, 0),
+    study_form_name = NULLIF($9, ''),
+    education_level = NULLIF($10, ''),
+    is_magistracy = $11,
+    updated_at = now()
+WHERE id = $1
+`, id, name, meta.SourceGroupID, meta.FacultyID, meta.FacultyName, meta.CourseID, meta.CourseName, meta.StudyFormID, meta.StudyFormName, meta.EducationLevel, meta.IsMagistracy)
+	return err
+}
+
+func (i *importer) updateGroupMetadata(ctx context.Context, tx pgx.Tx, id uuid.UUID, meta groupMetadata) error {
+	_, err := tx.Exec(ctx, `
+UPDATE public.edu_group
+SET source = 'suruz',
+    source_group_id = $2,
+    faculty_id = NULLIF($3, 0),
+    faculty_name = NULLIF($4, ''),
+    course_id = NULLIF($5, 0),
+    course_name = NULLIF($6, ''),
+    study_form_id = NULLIF($7, 0),
+    study_form_name = NULLIF($8, ''),
+    education_level = NULLIF($9, ''),
+    is_magistracy = $10,
+    updated_at = now()
+WHERE id = $1
+`, id, meta.SourceGroupID, meta.FacultyID, meta.FacultyName, meta.CourseID, meta.CourseName, meta.StudyFormID, meta.StudyFormName, meta.EducationLevel, meta.IsMagistracy)
+	return err
 }
 
 func (i *importer) ensureSubject(ctx context.Context, tx pgx.Tx, name string) (uuid.UUID, error) {

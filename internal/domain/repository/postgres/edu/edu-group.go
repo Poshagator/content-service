@@ -5,13 +5,14 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
-	"go.uber.org/zap"
 	"github.com/poshagator/content-service/internal/domain/entities/edu"
+	"go.uber.org/zap"
 )
 
 const qGetEduGroup = `
 SELECT 
-    id, filial_id, name
+    id, filial_id, name, source, source_group_id, faculty_id, faculty_name,
+    course_id, course_name, study_form_id, study_form_name, education_level, is_magistracy
 from
     public.edu_group
 where
@@ -37,14 +38,21 @@ func (r *Repository) GetEduGroup(ctx context.Context, id uuid.UUID) (*edu.EduGro
 
 const qCreateEduGroups = `
 insert into 
-    public.edu_group (filial_id, name)
+    public.edu_group (
+        filial_id, name, source, source_group_id, faculty_id, faculty_name,
+        course_id, course_name, study_form_id, study_form_name, education_level, is_magistracy
+    )
 values
-	($1, $2)
+	($1, $2, NULLIF($3, ''), NULLIF($4, 0), NULLIF($5, 0), NULLIF($6, ''),
+     NULLIF($7, 0), NULLIF($8, ''), NULLIF($9, 0), NULLIF($10, ''), NULLIF($11, ''), $12)
 returning id
 `
 
 func (r *Repository) CreateEduGroups(ctx context.Context, EduGroups *edu.EduGroup) error {
-	err := r.db.QueryRow(ctx, qCreateEduGroups, EduGroups.FilialID, EduGroups.Name).Scan(&EduGroups.ID)
+	err := r.db.QueryRow(ctx, qCreateEduGroups,
+		EduGroups.FilialID, EduGroups.Name, EduGroups.Source, EduGroups.SourceGroupID,
+		EduGroups.FacultyID, EduGroups.FacultyName, EduGroups.CourseID, EduGroups.CourseName,
+		EduGroups.StudyFormID, EduGroups.StudyFormName, EduGroups.EducationLevel, EduGroups.IsMagistracy).Scan(&EduGroups.ID)
 	if err != nil {
 		r.log.Error("failed to create EduGroups", zap.Error(err))
 		return err
@@ -57,12 +65,25 @@ const qUpdateEduGroups = `
 UPDATE public.edu_group
 SET
     filial_id = $2,
-    name = $3
+    name = $3,
+    source = NULLIF($4, ''),
+    source_group_id = NULLIF($5, 0),
+    faculty_id = NULLIF($6, 0),
+    faculty_name = NULLIF($7, ''),
+    course_id = NULLIF($8, 0),
+    course_name = NULLIF($9, ''),
+    study_form_id = NULLIF($10, 0),
+    study_form_name = NULLIF($11, ''),
+    education_level = NULLIF($12, ''),
+    is_magistracy = $13,
+    updated_at = now()
  WHERE id = $1`
 
 func (r *Repository) UpdateEduGroups(ctx context.Context, EduGroups *edu.EduGroup) error {
 	_, err := r.db.Exec(ctx, qUpdateEduGroups,
-		EduGroups.ID, EduGroups.FilialID, EduGroups.Name)
+		EduGroups.ID, EduGroups.FilialID, EduGroups.Name, EduGroups.Source, EduGroups.SourceGroupID,
+		EduGroups.FacultyID, EduGroups.FacultyName, EduGroups.CourseID, EduGroups.CourseName,
+		EduGroups.StudyFormID, EduGroups.StudyFormName, EduGroups.EducationLevel, EduGroups.IsMagistracy)
 	if err != nil {
 		r.log.Error("failed to update EduGroups", zap.Error(err))
 		return err
@@ -85,7 +106,8 @@ func (r *Repository) DeleteEduGroups(ctx context.Context, id uuid.UUID) error {
 
 const qGetEduGroups = `
 select 
-    id, filial_id, name
+    id, filial_id, name, source, source_group_id, faculty_id, faculty_name,
+    course_id, course_name, study_form_id, study_form_name, education_level, is_magistracy
 from
     public.edu_group
 where 
@@ -111,7 +133,8 @@ func (r *Repository) GetEduGroups(ctx context.Context, filialID uuid.UUID, sortQ
 
 const qSearchEduGroups = `
 select 
-    id, filial_id, name
+    id, filial_id, name, source, source_group_id, faculty_id, faculty_name,
+    course_id, course_name, study_form_id, study_form_name, education_level, is_magistracy
 from
     public.edu_group
 where 

@@ -113,8 +113,19 @@ CREATE TABLE edu_group (
     id             uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
     filial_id      uuid NOT NULL REFERENCES filial(id) ON DELETE CASCADE,
     name           varchar NOT NULL,
+    source         varchar,
+    source_group_id int,
+    faculty_id     int,
+    faculty_name   varchar,
+    course_id      int,
+    course_name    varchar,
+    study_form_id  int,
+    study_form_name varchar,
+    education_level varchar,
+    is_magistracy  boolean NOT NULL DEFAULT false,
     created_at     timestamp NOT NULL DEFAULT now(),
-    updated_at     timestamp NOT NULL DEFAULT now()
+    updated_at     timestamp NOT NULL DEFAULT now(),
+    CONSTRAINT edu_group_source_unique UNIQUE (filial_id, source, source_group_id)
 );
 
 CREATE TABLE timetable_entry (
