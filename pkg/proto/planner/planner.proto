@@ -25,6 +25,11 @@ service PlannerService {
 
   // Синхронизация конкретных переопределяющих задач и исключений (например, из календаря или отмена пары)
   rpc SyncTasks(SyncTasksRequest) returns (SyncTasksResponse);
+
+  rpc Subscribe(SubscribeRequest) returns (SubscribeResponse);
+  rpc Unsubscribe(UnsubscribeRequest) returns (UnsubscribeResponse);
+  rpc GetUserSubscriptions(GetUserSubscriptionsRequest) returns (GetUserSubscriptionsResponse);
+  rpc SyncSourceTasks(SyncSourceTasksRequest) returns (SyncSourceTasksResponse);
 }
 
 message GetUsersWithScheduleRequest {}
@@ -150,4 +155,57 @@ enum SyncAction {
 
 message SyncTasksResponse {
   int32 synced_count = 1;
+}
+
+message SubscribeRequest {
+  string user_id = 1;
+  string source_type = 2;
+  string source_id = 3;
+  string source_name = 4;
+  string metadata_json = 5;
+}
+
+message SubscribeResponse {
+  string subscription_id = 1;
+}
+
+message UnsubscribeRequest {
+  string user_id = 1;
+  string source_type = 2;
+  string source_id = 3;
+}
+
+message UnsubscribeResponse {
+  int32 deleted_tasks = 1;
+}
+
+message GetUserSubscriptionsRequest {
+  string user_id = 1;
+}
+
+message Subscription {
+  string id = 1;
+  string user_id = 2;
+  string source_type = 3;
+  string source_id = 4;
+  string source_name = 5;
+  string metadata_json = 6;
+  string created_at = 7;
+  string updated_at = 8;
+}
+
+message GetUserSubscriptionsResponse {
+  repeated Subscription subscriptions = 1;
+}
+
+message SyncSourceTasksRequest {
+  string source_type = 1;
+  string source_id = 2;
+  repeated ExternalTask tasks = 3;
+}
+
+message SyncSourceTasksResponse {
+  int32 subscriptions_count = 1;
+  int32 synced_tasks_count = 2;
+  int32 deleted_tasks_count = 3;
 }

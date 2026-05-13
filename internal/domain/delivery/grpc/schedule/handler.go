@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/poshagator/content-service/config"
 	"github.com/poshagator/content-service/internal/domain/usecase/edu"
 	"github.com/poshagator/content-service/pkg/proto/schedule/gen"
@@ -99,7 +100,19 @@ func (h *Handler) SyncSchedule(ctx context.Context, req *schedule.SyncScheduleRe
 			zap.Int("teachers", stats.Teachers),
 			zap.Int("schedules", stats.Schedules),
 			zap.Int("events", stats.Events),
+			zap.Int("affectedGroups", len(stats.AffectedGroupIDs)),
 		)
+
+		for _, rawGroupID := range stats.AffectedGroupIDs {
+			groupID, err := uuid.Parse(rawGroupID)
+			if err != nil {
+				h.log.Warn("skip planner source sync for invalid group id", zap.String("groupID", rawGroupID), zap.Error(err))
+				continue
+			}
+			if err := h.eduUsecase.SyncPlannerSourceForGroup(bgCtx, groupID); err != nil {
+				h.log.Warn("failed to refresh planner source after Suruz sync", zap.String("groupID", rawGroupID), zap.Error(err))
+			}
+		}
 	}()
 
 	return &schedule.SyncScheduleResponse{

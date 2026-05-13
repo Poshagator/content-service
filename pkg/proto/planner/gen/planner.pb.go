@@ -1293,6 +1293,538 @@ func (x *SyncTasksResponse) GetSyncedCount() int32 {
 	return 0
 }
 
+type SubscribeRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	SourceType    string                 `protobuf:"bytes,2,opt,name=source_type,json=sourceType,proto3" json:"source_type,omitempty"`
+	SourceId      string                 `protobuf:"bytes,3,opt,name=source_id,json=sourceId,proto3" json:"source_id,omitempty"`
+	SourceName    string                 `protobuf:"bytes,4,opt,name=source_name,json=sourceName,proto3" json:"source_name,omitempty"`
+	MetadataJson  string                 `protobuf:"bytes,5,opt,name=metadata_json,json=metadataJson,proto3" json:"metadata_json,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SubscribeRequest) Reset() {
+	*x = SubscribeRequest{}
+	mi := &file_planner_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SubscribeRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SubscribeRequest) ProtoMessage() {}
+
+func (x *SubscribeRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_planner_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SubscribeRequest.ProtoReflect.Descriptor instead.
+func (*SubscribeRequest) Descriptor() ([]byte, []int) {
+	return file_planner_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *SubscribeRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *SubscribeRequest) GetSourceType() string {
+	if x != nil {
+		return x.SourceType
+	}
+	return ""
+}
+
+func (x *SubscribeRequest) GetSourceId() string {
+	if x != nil {
+		return x.SourceId
+	}
+	return ""
+}
+
+func (x *SubscribeRequest) GetSourceName() string {
+	if x != nil {
+		return x.SourceName
+	}
+	return ""
+}
+
+func (x *SubscribeRequest) GetMetadataJson() string {
+	if x != nil {
+		return x.MetadataJson
+	}
+	return ""
+}
+
+type SubscribeResponse struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	SubscriptionId string                 `protobuf:"bytes,1,opt,name=subscription_id,json=subscriptionId,proto3" json:"subscription_id,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *SubscribeResponse) Reset() {
+	*x = SubscribeResponse{}
+	mi := &file_planner_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SubscribeResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SubscribeResponse) ProtoMessage() {}
+
+func (x *SubscribeResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_planner_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SubscribeResponse.ProtoReflect.Descriptor instead.
+func (*SubscribeResponse) Descriptor() ([]byte, []int) {
+	return file_planner_proto_rawDescGZIP(), []int{23}
+}
+
+func (x *SubscribeResponse) GetSubscriptionId() string {
+	if x != nil {
+		return x.SubscriptionId
+	}
+	return ""
+}
+
+type UnsubscribeRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	SourceType    string                 `protobuf:"bytes,2,opt,name=source_type,json=sourceType,proto3" json:"source_type,omitempty"`
+	SourceId      string                 `protobuf:"bytes,3,opt,name=source_id,json=sourceId,proto3" json:"source_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UnsubscribeRequest) Reset() {
+	*x = UnsubscribeRequest{}
+	mi := &file_planner_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UnsubscribeRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UnsubscribeRequest) ProtoMessage() {}
+
+func (x *UnsubscribeRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_planner_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UnsubscribeRequest.ProtoReflect.Descriptor instead.
+func (*UnsubscribeRequest) Descriptor() ([]byte, []int) {
+	return file_planner_proto_rawDescGZIP(), []int{24}
+}
+
+func (x *UnsubscribeRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *UnsubscribeRequest) GetSourceType() string {
+	if x != nil {
+		return x.SourceType
+	}
+	return ""
+}
+
+func (x *UnsubscribeRequest) GetSourceId() string {
+	if x != nil {
+		return x.SourceId
+	}
+	return ""
+}
+
+type UnsubscribeResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	DeletedTasks  int32                  `protobuf:"varint,1,opt,name=deleted_tasks,json=deletedTasks,proto3" json:"deleted_tasks,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UnsubscribeResponse) Reset() {
+	*x = UnsubscribeResponse{}
+	mi := &file_planner_proto_msgTypes[25]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UnsubscribeResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UnsubscribeResponse) ProtoMessage() {}
+
+func (x *UnsubscribeResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_planner_proto_msgTypes[25]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UnsubscribeResponse.ProtoReflect.Descriptor instead.
+func (*UnsubscribeResponse) Descriptor() ([]byte, []int) {
+	return file_planner_proto_rawDescGZIP(), []int{25}
+}
+
+func (x *UnsubscribeResponse) GetDeletedTasks() int32 {
+	if x != nil {
+		return x.DeletedTasks
+	}
+	return 0
+}
+
+type GetUserSubscriptionsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetUserSubscriptionsRequest) Reset() {
+	*x = GetUserSubscriptionsRequest{}
+	mi := &file_planner_proto_msgTypes[26]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetUserSubscriptionsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetUserSubscriptionsRequest) ProtoMessage() {}
+
+func (x *GetUserSubscriptionsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_planner_proto_msgTypes[26]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetUserSubscriptionsRequest.ProtoReflect.Descriptor instead.
+func (*GetUserSubscriptionsRequest) Descriptor() ([]byte, []int) {
+	return file_planner_proto_rawDescGZIP(), []int{26}
+}
+
+func (x *GetUserSubscriptionsRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+type Subscription struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	SourceType    string                 `protobuf:"bytes,3,opt,name=source_type,json=sourceType,proto3" json:"source_type,omitempty"`
+	SourceId      string                 `protobuf:"bytes,4,opt,name=source_id,json=sourceId,proto3" json:"source_id,omitempty"`
+	SourceName    string                 `protobuf:"bytes,5,opt,name=source_name,json=sourceName,proto3" json:"source_name,omitempty"`
+	MetadataJson  string                 `protobuf:"bytes,6,opt,name=metadata_json,json=metadataJson,proto3" json:"metadata_json,omitempty"`
+	CreatedAt     string                 `protobuf:"bytes,7,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	UpdatedAt     string                 `protobuf:"bytes,8,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Subscription) Reset() {
+	*x = Subscription{}
+	mi := &file_planner_proto_msgTypes[27]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Subscription) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Subscription) ProtoMessage() {}
+
+func (x *Subscription) ProtoReflect() protoreflect.Message {
+	mi := &file_planner_proto_msgTypes[27]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Subscription.ProtoReflect.Descriptor instead.
+func (*Subscription) Descriptor() ([]byte, []int) {
+	return file_planner_proto_rawDescGZIP(), []int{27}
+}
+
+func (x *Subscription) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *Subscription) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *Subscription) GetSourceType() string {
+	if x != nil {
+		return x.SourceType
+	}
+	return ""
+}
+
+func (x *Subscription) GetSourceId() string {
+	if x != nil {
+		return x.SourceId
+	}
+	return ""
+}
+
+func (x *Subscription) GetSourceName() string {
+	if x != nil {
+		return x.SourceName
+	}
+	return ""
+}
+
+func (x *Subscription) GetMetadataJson() string {
+	if x != nil {
+		return x.MetadataJson
+	}
+	return ""
+}
+
+func (x *Subscription) GetCreatedAt() string {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return ""
+}
+
+func (x *Subscription) GetUpdatedAt() string {
+	if x != nil {
+		return x.UpdatedAt
+	}
+	return ""
+}
+
+type GetUserSubscriptionsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Subscriptions []*Subscription        `protobuf:"bytes,1,rep,name=subscriptions,proto3" json:"subscriptions,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetUserSubscriptionsResponse) Reset() {
+	*x = GetUserSubscriptionsResponse{}
+	mi := &file_planner_proto_msgTypes[28]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetUserSubscriptionsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetUserSubscriptionsResponse) ProtoMessage() {}
+
+func (x *GetUserSubscriptionsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_planner_proto_msgTypes[28]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetUserSubscriptionsResponse.ProtoReflect.Descriptor instead.
+func (*GetUserSubscriptionsResponse) Descriptor() ([]byte, []int) {
+	return file_planner_proto_rawDescGZIP(), []int{28}
+}
+
+func (x *GetUserSubscriptionsResponse) GetSubscriptions() []*Subscription {
+	if x != nil {
+		return x.Subscriptions
+	}
+	return nil
+}
+
+type SyncSourceTasksRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SourceType    string                 `protobuf:"bytes,1,opt,name=source_type,json=sourceType,proto3" json:"source_type,omitempty"`
+	SourceId      string                 `protobuf:"bytes,2,opt,name=source_id,json=sourceId,proto3" json:"source_id,omitempty"`
+	Tasks         []*ExternalTask        `protobuf:"bytes,3,rep,name=tasks,proto3" json:"tasks,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SyncSourceTasksRequest) Reset() {
+	*x = SyncSourceTasksRequest{}
+	mi := &file_planner_proto_msgTypes[29]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SyncSourceTasksRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SyncSourceTasksRequest) ProtoMessage() {}
+
+func (x *SyncSourceTasksRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_planner_proto_msgTypes[29]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SyncSourceTasksRequest.ProtoReflect.Descriptor instead.
+func (*SyncSourceTasksRequest) Descriptor() ([]byte, []int) {
+	return file_planner_proto_rawDescGZIP(), []int{29}
+}
+
+func (x *SyncSourceTasksRequest) GetSourceType() string {
+	if x != nil {
+		return x.SourceType
+	}
+	return ""
+}
+
+func (x *SyncSourceTasksRequest) GetSourceId() string {
+	if x != nil {
+		return x.SourceId
+	}
+	return ""
+}
+
+func (x *SyncSourceTasksRequest) GetTasks() []*ExternalTask {
+	if x != nil {
+		return x.Tasks
+	}
+	return nil
+}
+
+type SyncSourceTasksResponse struct {
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	SubscriptionsCount int32                  `protobuf:"varint,1,opt,name=subscriptions_count,json=subscriptionsCount,proto3" json:"subscriptions_count,omitempty"`
+	SyncedTasksCount   int32                  `protobuf:"varint,2,opt,name=synced_tasks_count,json=syncedTasksCount,proto3" json:"synced_tasks_count,omitempty"`
+	DeletedTasksCount  int32                  `protobuf:"varint,3,opt,name=deleted_tasks_count,json=deletedTasksCount,proto3" json:"deleted_tasks_count,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *SyncSourceTasksResponse) Reset() {
+	*x = SyncSourceTasksResponse{}
+	mi := &file_planner_proto_msgTypes[30]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SyncSourceTasksResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SyncSourceTasksResponse) ProtoMessage() {}
+
+func (x *SyncSourceTasksResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_planner_proto_msgTypes[30]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SyncSourceTasksResponse.ProtoReflect.Descriptor instead.
+func (*SyncSourceTasksResponse) Descriptor() ([]byte, []int) {
+	return file_planner_proto_rawDescGZIP(), []int{30}
+}
+
+func (x *SyncSourceTasksResponse) GetSubscriptionsCount() int32 {
+	if x != nil {
+		return x.SubscriptionsCount
+	}
+	return 0
+}
+
+func (x *SyncSourceTasksResponse) GetSyncedTasksCount() int32 {
+	if x != nil {
+		return x.SyncedTasksCount
+	}
+	return 0
+}
+
+func (x *SyncSourceTasksResponse) GetDeletedTasksCount() int32 {
+	if x != nil {
+		return x.DeletedTasksCount
+	}
+	return 0
+}
+
 var File_planner_proto protoreflect.FileDescriptor
 
 const file_planner_proto_rawDesc = "" +
@@ -1391,11 +1923,54 @@ const file_planner_proto_rawDesc = "" +
 	"activityId\x12+\n" +
 	"\x06action\x18\b \x01(\x0e2\x13.planner.SyncActionR\x06action\"6\n" +
 	"\x11SyncTasksResponse\x12!\n" +
-	"\fsynced_count\x18\x01 \x01(\x05R\vsyncedCount*<\n" +
+	"\fsynced_count\x18\x01 \x01(\x05R\vsyncedCount\"\xaf\x01\n" +
+	"\x10SubscribeRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x1f\n" +
+	"\vsource_type\x18\x02 \x01(\tR\n" +
+	"sourceType\x12\x1b\n" +
+	"\tsource_id\x18\x03 \x01(\tR\bsourceId\x12\x1f\n" +
+	"\vsource_name\x18\x04 \x01(\tR\n" +
+	"sourceName\x12#\n" +
+	"\rmetadata_json\x18\x05 \x01(\tR\fmetadataJson\"<\n" +
+	"\x11SubscribeResponse\x12'\n" +
+	"\x0fsubscription_id\x18\x01 \x01(\tR\x0esubscriptionId\"k\n" +
+	"\x12UnsubscribeRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x1f\n" +
+	"\vsource_type\x18\x02 \x01(\tR\n" +
+	"sourceType\x12\x1b\n" +
+	"\tsource_id\x18\x03 \x01(\tR\bsourceId\":\n" +
+	"\x13UnsubscribeResponse\x12#\n" +
+	"\rdeleted_tasks\x18\x01 \x01(\x05R\fdeletedTasks\"6\n" +
+	"\x1bGetUserSubscriptionsRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\"\xf9\x01\n" +
+	"\fSubscription\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\tR\x06userId\x12\x1f\n" +
+	"\vsource_type\x18\x03 \x01(\tR\n" +
+	"sourceType\x12\x1b\n" +
+	"\tsource_id\x18\x04 \x01(\tR\bsourceId\x12\x1f\n" +
+	"\vsource_name\x18\x05 \x01(\tR\n" +
+	"sourceName\x12#\n" +
+	"\rmetadata_json\x18\x06 \x01(\tR\fmetadataJson\x12\x1d\n" +
+	"\n" +
+	"created_at\x18\a \x01(\tR\tcreatedAt\x12\x1d\n" +
+	"\n" +
+	"updated_at\x18\b \x01(\tR\tupdatedAt\"[\n" +
+	"\x1cGetUserSubscriptionsResponse\x12;\n" +
+	"\rsubscriptions\x18\x01 \x03(\v2\x15.planner.SubscriptionR\rsubscriptions\"\x83\x01\n" +
+	"\x16SyncSourceTasksRequest\x12\x1f\n" +
+	"\vsource_type\x18\x01 \x01(\tR\n" +
+	"sourceType\x12\x1b\n" +
+	"\tsource_id\x18\x02 \x01(\tR\bsourceId\x12+\n" +
+	"\x05tasks\x18\x03 \x03(\v2\x15.planner.ExternalTaskR\x05tasks\"\xa8\x01\n" +
+	"\x17SyncSourceTasksResponse\x12/\n" +
+	"\x13subscriptions_count\x18\x01 \x01(\x05R\x12subscriptionsCount\x12,\n" +
+	"\x12synced_tasks_count\x18\x02 \x01(\x05R\x10syncedTasksCount\x12.\n" +
+	"\x13deleted_tasks_count\x18\x03 \x01(\x05R\x11deletedTasksCount*<\n" +
 	"\n" +
 	"SyncAction\x12\x16\n" +
 	"\x12SYNC_ACTION_UPSERT\x10\x00\x12\x16\n" +
-	"\x12SYNC_ACTION_DELETE\x10\x012\x8b\x05\n" +
+	"\x12SYNC_ACTION_DELETE\x10\x012\xd4\a\n" +
 	"\x0ePlannerService\x12c\n" +
 	"\x14GetUsersWithSchedule\x12$.planner.GetUsersWithScheduleRequest\x1a%.planner.GetUsersWithScheduleResponse\x12Z\n" +
 	"\x11GetWeeklySchedule\x12!.planner.GetWeeklyScheduleRequest\x1a\".planner.GetWeeklyScheduleResponse\x12W\n" +
@@ -1403,7 +1978,11 @@ const file_planner_proto_rawDesc = "" +
 	"\x10GetAllActivities\x12 .planner.GetAllActivitiesRequest\x1a!.planner.GetAllActivitiesResponse\x12Z\n" +
 	"\x11GetUserActivities\x12!.planner.GetUserActivitiesRequest\x1a\".planner.GetUserActivitiesResponse\x12f\n" +
 	"\x15SyncRecurringSchedule\x12%.planner.SyncRecurringScheduleRequest\x1a&.planner.SyncRecurringScheduleResponse\x12B\n" +
-	"\tSyncTasks\x12\x19.planner.SyncTasksRequest\x1a\x1a.planner.SyncTasksResponseBEZCgithub.com/poshagator/content-service/pkg/proto/planner/gen;plannerb\x06proto3"
+	"\tSyncTasks\x12\x19.planner.SyncTasksRequest\x1a\x1a.planner.SyncTasksResponse\x12B\n" +
+	"\tSubscribe\x12\x19.planner.SubscribeRequest\x1a\x1a.planner.SubscribeResponse\x12H\n" +
+	"\vUnsubscribe\x12\x1b.planner.UnsubscribeRequest\x1a\x1c.planner.UnsubscribeResponse\x12c\n" +
+	"\x14GetUserSubscriptions\x12$.planner.GetUserSubscriptionsRequest\x1a%.planner.GetUserSubscriptionsResponse\x12T\n" +
+	"\x0fSyncSourceTasks\x12\x1f.planner.SyncSourceTasksRequest\x1a .planner.SyncSourceTasksResponseBEZCgithub.com/poshagator/content-service/pkg/proto/planner/gen;plannerb\x06proto3"
 
 var (
 	file_planner_proto_rawDescOnce sync.Once
@@ -1418,7 +1997,7 @@ func file_planner_proto_rawDescGZIP() []byte {
 }
 
 var file_planner_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_planner_proto_msgTypes = make([]protoimpl.MessageInfo, 22)
+var file_planner_proto_msgTypes = make([]protoimpl.MessageInfo, 31)
 var file_planner_proto_goTypes = []any{
 	(SyncAction)(0),                       // 0: planner.SyncAction
 	(*GetUsersWithScheduleRequest)(nil),   // 1: planner.GetUsersWithScheduleRequest
@@ -1443,6 +2022,15 @@ var file_planner_proto_goTypes = []any{
 	(*SyncTasksRequest)(nil),              // 20: planner.SyncTasksRequest
 	(*ExternalTask)(nil),                  // 21: planner.ExternalTask
 	(*SyncTasksResponse)(nil),             // 22: planner.SyncTasksResponse
+	(*SubscribeRequest)(nil),              // 23: planner.SubscribeRequest
+	(*SubscribeResponse)(nil),             // 24: planner.SubscribeResponse
+	(*UnsubscribeRequest)(nil),            // 25: planner.UnsubscribeRequest
+	(*UnsubscribeResponse)(nil),           // 26: planner.UnsubscribeResponse
+	(*GetUserSubscriptionsRequest)(nil),   // 27: planner.GetUserSubscriptionsRequest
+	(*Subscription)(nil),                  // 28: planner.Subscription
+	(*GetUserSubscriptionsResponse)(nil),  // 29: planner.GetUserSubscriptionsResponse
+	(*SyncSourceTasksRequest)(nil),        // 30: planner.SyncSourceTasksRequest
+	(*SyncSourceTasksResponse)(nil),       // 31: planner.SyncSourceTasksResponse
 }
 var file_planner_proto_depIdxs = []int32{
 	9,  // 0: planner.GetWeeklyScheduleResponse.schedule:type_name -> planner.WeekSchedule
@@ -1456,25 +2044,35 @@ var file_planner_proto_depIdxs = []int32{
 	18, // 8: planner.SyncRecurringScheduleRequest.events:type_name -> planner.RecurringEvent
 	21, // 9: planner.SyncTasksRequest.tasks:type_name -> planner.ExternalTask
 	0,  // 10: planner.ExternalTask.action:type_name -> planner.SyncAction
-	1,  // 11: planner.PlannerService.GetUsersWithSchedule:input_type -> planner.GetUsersWithScheduleRequest
-	3,  // 12: planner.PlannerService.GetWeeklySchedule:input_type -> planner.GetWeeklyScheduleRequest
-	5,  // 13: planner.PlannerService.GetAllUsersPlans:input_type -> planner.GetAllUsersPlansRequest
-	12, // 14: planner.PlannerService.GetAllActivities:input_type -> planner.GetAllActivitiesRequest
-	14, // 15: planner.PlannerService.GetUserActivities:input_type -> planner.GetUserActivitiesRequest
-	17, // 16: planner.PlannerService.SyncRecurringSchedule:input_type -> planner.SyncRecurringScheduleRequest
-	20, // 17: planner.PlannerService.SyncTasks:input_type -> planner.SyncTasksRequest
-	2,  // 18: planner.PlannerService.GetUsersWithSchedule:output_type -> planner.GetUsersWithScheduleResponse
-	4,  // 19: planner.PlannerService.GetWeeklySchedule:output_type -> planner.GetWeeklyScheduleResponse
-	6,  // 20: planner.PlannerService.GetAllUsersPlans:output_type -> planner.GetAllUsersPlansResponse
-	13, // 21: planner.PlannerService.GetAllActivities:output_type -> planner.GetAllActivitiesResponse
-	15, // 22: planner.PlannerService.GetUserActivities:output_type -> planner.GetUserActivitiesResponse
-	19, // 23: planner.PlannerService.SyncRecurringSchedule:output_type -> planner.SyncRecurringScheduleResponse
-	22, // 24: planner.PlannerService.SyncTasks:output_type -> planner.SyncTasksResponse
-	18, // [18:25] is the sub-list for method output_type
-	11, // [11:18] is the sub-list for method input_type
-	11, // [11:11] is the sub-list for extension type_name
-	11, // [11:11] is the sub-list for extension extendee
-	0,  // [0:11] is the sub-list for field type_name
+	28, // 11: planner.GetUserSubscriptionsResponse.subscriptions:type_name -> planner.Subscription
+	21, // 12: planner.SyncSourceTasksRequest.tasks:type_name -> planner.ExternalTask
+	1,  // 13: planner.PlannerService.GetUsersWithSchedule:input_type -> planner.GetUsersWithScheduleRequest
+	3,  // 14: planner.PlannerService.GetWeeklySchedule:input_type -> planner.GetWeeklyScheduleRequest
+	5,  // 15: planner.PlannerService.GetAllUsersPlans:input_type -> planner.GetAllUsersPlansRequest
+	12, // 16: planner.PlannerService.GetAllActivities:input_type -> planner.GetAllActivitiesRequest
+	14, // 17: planner.PlannerService.GetUserActivities:input_type -> planner.GetUserActivitiesRequest
+	17, // 18: planner.PlannerService.SyncRecurringSchedule:input_type -> planner.SyncRecurringScheduleRequest
+	20, // 19: planner.PlannerService.SyncTasks:input_type -> planner.SyncTasksRequest
+	23, // 20: planner.PlannerService.Subscribe:input_type -> planner.SubscribeRequest
+	25, // 21: planner.PlannerService.Unsubscribe:input_type -> planner.UnsubscribeRequest
+	27, // 22: planner.PlannerService.GetUserSubscriptions:input_type -> planner.GetUserSubscriptionsRequest
+	30, // 23: planner.PlannerService.SyncSourceTasks:input_type -> planner.SyncSourceTasksRequest
+	2,  // 24: planner.PlannerService.GetUsersWithSchedule:output_type -> planner.GetUsersWithScheduleResponse
+	4,  // 25: planner.PlannerService.GetWeeklySchedule:output_type -> planner.GetWeeklyScheduleResponse
+	6,  // 26: planner.PlannerService.GetAllUsersPlans:output_type -> planner.GetAllUsersPlansResponse
+	13, // 27: planner.PlannerService.GetAllActivities:output_type -> planner.GetAllActivitiesResponse
+	15, // 28: planner.PlannerService.GetUserActivities:output_type -> planner.GetUserActivitiesResponse
+	19, // 29: planner.PlannerService.SyncRecurringSchedule:output_type -> planner.SyncRecurringScheduleResponse
+	22, // 30: planner.PlannerService.SyncTasks:output_type -> planner.SyncTasksResponse
+	24, // 31: planner.PlannerService.Subscribe:output_type -> planner.SubscribeResponse
+	26, // 32: planner.PlannerService.Unsubscribe:output_type -> planner.UnsubscribeResponse
+	29, // 33: planner.PlannerService.GetUserSubscriptions:output_type -> planner.GetUserSubscriptionsResponse
+	31, // 34: planner.PlannerService.SyncSourceTasks:output_type -> planner.SyncSourceTasksResponse
+	24, // [24:35] is the sub-list for method output_type
+	13, // [13:24] is the sub-list for method input_type
+	13, // [13:13] is the sub-list for extension type_name
+	13, // [13:13] is the sub-list for extension extendee
+	0,  // [0:13] is the sub-list for field type_name
 }
 
 func init() { file_planner_proto_init() }
@@ -1488,7 +2086,7 @@ func file_planner_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_planner_proto_rawDesc), len(file_planner_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   22,
+			NumMessages:   31,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

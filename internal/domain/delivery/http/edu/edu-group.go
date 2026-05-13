@@ -90,7 +90,13 @@ func (h *Handler) ListEduGroups(c *gin.Context) {
 	}
 
 	if c.Query("grouped") == "true" {
-		eduGroups, err := h.usecase.GetEduGroupsGrouped(c, filialID)
+		var eduGroups edu.EduGroupsByFaculty
+		var err error
+		if c.Query("withSubscriptions") == "true" {
+			eduGroups, err = h.usecase.GetEduGroupsGroupedWithSubscriptions(c, filialID, plannerUserID(c))
+		} else {
+			eduGroups, err = h.usecase.GetEduGroupsGrouped(c, filialID)
+		}
 		if err != nil {
 			h.logger.Error("failed to get grouped eduGroups", zap.Error(err))
 			h.renderError(c, err)
@@ -132,7 +138,12 @@ func (h *Handler) ListEduGroupsTree(c *gin.Context) {
 		return
 	}
 
-	eduGroups, err := h.usecase.GetEduGroupsGrouped(c, filialID)
+	var eduGroups edu.EduGroupsByFaculty
+	if c.Query("withSubscriptions") == "true" {
+		eduGroups, err = h.usecase.GetEduGroupsGroupedWithSubscriptions(c, filialID, plannerUserID(c))
+	} else {
+		eduGroups, err = h.usecase.GetEduGroupsGrouped(c, filialID)
+	}
 	if err != nil {
 		h.logger.Error("failed to get grouped eduGroups", zap.Error(err))
 		h.renderError(c, err)

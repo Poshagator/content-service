@@ -73,6 +73,23 @@ func (h *Handler) UnsubscribeFromPlanner(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Unsubscribed successfully"})
 }
 
+func (h *Handler) GetPlannerSubscriptions(c *gin.Context) {
+	userID := plannerUserID(c)
+	if userID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "userID is required"})
+		return
+	}
+
+	subscriptions, err := h.usecase.GetPlannerSubscriptions(c.Request.Context(), userID)
+	if err != nil {
+		h.logger.Error("failed to get planner subscriptions", zap.String("userID", userID), zap.Error(err))
+		h.renderError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"subscriptions": subscriptions})
+}
+
 func plannerUserID(c *gin.Context) string {
 	if userID := c.GetHeader("X-User-Id"); userID != "" {
 		return userID

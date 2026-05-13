@@ -22,6 +22,7 @@ type EduGroup struct {
 	StudyFormName    string     `json:"study_form_name" db:"study_form_name"`
 	EducationLevel   string     `json:"education_level" db:"education_level"`
 	IsMagistracy     bool       `json:"is_magistracy" db:"is_magistracy"`
+	IsSubscribed     bool       `json:"is_subscribed,omitempty" db:"-"`
 	Subgroups        []EduGroup `json:"subgroups,omitempty" db:"-"`
 }
 

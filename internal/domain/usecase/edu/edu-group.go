@@ -68,6 +68,34 @@ func (u *Usecase) GetEduGroupsGrouped(ctx context.Context, filialID uuid.UUID) (
 	return groupEduGroups(groups), nil
 }
 
+func (u *Usecase) GetEduGroupsGroupedWithSubscriptions(ctx context.Context, filialID uuid.UUID, userID string) (edu.EduGroupsByFaculty, error) {
+	tree, err := u.GetEduGroupsGrouped(ctx, filialID)
+	if err != nil {
+		return nil, err
+	}
+	if userID == "" {
+		return tree, nil
+	}
+	subscriptions, err := u.GetPlannerSubscriptions(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	subscribed := make(map[string]struct{}, len(subscriptions))
+	for _, sub := range subscriptions {
+		if sub.GetSourceType() == plannerSourceTypeEduGroup {
+			subscribed[sub.GetSourceId()] = struct{}{}
+		}
+	}
+	for fi := range tree {
+		for ci := range tree[fi].Courses {
+			for gi := range tree[fi].Courses[ci].Groups {
+				markGroupSubscription(&tree[fi].Courses[ci].Groups[gi], subscribed)
+			}
+		}
+	}
+	return tree, nil
+}
+
 func (u *Usecase) SearchEduGroups(ctx context.Context, filialID uuid.UUID, name string, limit int) ([]edu.EduGroup, error) {
 	if limit <= 0 {
 		limit = 20
@@ -77,6 +105,15 @@ func (u *Usecase) SearchEduGroups(ctx context.Context, filialID uuid.UUID, name 
 	}
 
 	return u.repo.SearchEduGroups(ctx, filialID, name, limit)
+}
+
+func markGroupSubscription(group *edu.EduGroup, subscribed map[string]struct{}) {
+	if _, ok := subscribed[group.ID.String()]; ok {
+		group.IsSubscribed = true
+	}
+	for i := range group.Subgroups {
+		markGroupSubscription(&group.Subgroups[i], subscribed)
+	}
 }
 
 func groupEduGroups(groups []edu.EduGroup) edu.EduGroupsByFaculty {

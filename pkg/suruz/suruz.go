@@ -36,13 +36,14 @@ type Config struct {
 }
 
 type Stats struct {
-	Groups          int
-	Teachers        int
-	Schedules       int
-	FetchErrors     int
-	Events          int
-	EntriesCreated  int
-	EntriesExisting int
+	Groups           int
+	Teachers         int
+	Schedules        int
+	FetchErrors      int
+	Events           int
+	EntriesCreated   int
+	EntriesExisting  int
+	AffectedGroupIDs []string
 }
 
 type weekData struct {
@@ -89,14 +90,15 @@ func Sync(ctx context.Context, cfg Config) (Stats, error) {
 
 	var stats Stats
 	imp := &importer{
-		db:         db,
-		filialID:   filialID,
-		termName:   cfg.TermName,
-		weekOffset: week.Offset,
-		subjects:   make(map[string]uuid.UUID),
-		rooms:      make(map[string]uuid.UUID),
-		groups:     make(map[string]uuid.UUID),
-		teachers:   make(map[string]uuid.UUID),
+		db:             db,
+		filialID:       filialID,
+		termName:       cfg.TermName,
+		weekOffset:     week.Offset,
+		subjects:       make(map[string]uuid.UUID),
+		rooms:          make(map[string]uuid.UUID),
+		groups:         make(map[string]uuid.UUID),
+		teachers:       make(map[string]uuid.UUID),
+		affectedGroups: make(map[uuid.UUID]struct{}),
 	}
 
 	// 1. Import Metadata (Groups & Teachers) first so they are visible immediately
@@ -128,6 +130,7 @@ func Sync(ctx context.Context, cfg Config) (Stats, error) {
 		}
 	}
 
+	stats.AffectedGroupIDs = imp.affectedGroupIDs()
 	return stats, nil
 }
 
@@ -301,10 +304,11 @@ type importer struct {
 	termName   string
 	weekOffset int
 
-	subjects map[string]uuid.UUID
-	rooms    map[string]uuid.UUID
-	groups   map[string]uuid.UUID
-	teachers map[string]uuid.UUID
+	subjects       map[string]uuid.UUID
+	rooms          map[string]uuid.UUID
+	groups         map[string]uuid.UUID
+	teachers       map[string]uuid.UUID
+	affectedGroups map[uuid.UUID]struct{}
 }
 
 func fetchGroups(ctx context.Context, client *http.Client, apiBase string) (groupsData, error) {
@@ -720,6 +724,7 @@ func (i *importer) importEvent(ctx context.Context, tx pgx.Tx, termID uuid.UUID,
 		if err != nil {
 			return 0, 0, err
 		}
+		i.affectedGroups[groupID] = struct{}{}
 		if wasCreated {
 			created++
 		} else {
@@ -728,6 +733,14 @@ func (i *importer) importEvent(ctx context.Context, tx pgx.Tx, termID uuid.UUID,
 	}
 
 	return created, existing, nil
+}
+
+func (i *importer) affectedGroupIDs() []string {
+	ids := make([]string, 0, len(i.affectedGroups))
+	for id := range i.affectedGroups {
+		ids = append(ids, id.String())
+	}
+	return ids
 }
 
 func isExamGroupName(name string) bool {
