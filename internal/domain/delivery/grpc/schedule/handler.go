@@ -10,6 +10,7 @@ import (
 	"github.com/poshagator/content-service/config"
 	"github.com/poshagator/content-service/internal/domain/usecase/edu"
 	"github.com/poshagator/content-service/pkg/proto/schedule/gen"
+	"github.com/poshagator/content-service/pkg/miit"
 	"github.com/poshagator/content-service/pkg/suruz"
 	"go.uber.org/zap"
 )
@@ -36,6 +37,7 @@ type syncPayload struct {
 	SourceParam  string `json:"source_param"`
 	LimitSources int    `json:"limit_sources"`
 	TermName     string `json:"term_name"`
+	Institute    string `json:"institute"`
 }
 
 func (h *Handler) SyncSchedule(ctx context.Context, req *schedule.SyncScheduleRequest) (*schedule.SyncScheduleResponse, error) {
@@ -45,7 +47,7 @@ func (h *Handler) SyncSchedule(ctx context.Context, req *schedule.SyncScheduleRe
 		zap.String("parser_id", req.ParserId),
 	)
 
-	if req.ParserId != "" && req.ParserId != "suruz" {
+	if req.ParserId != "" && req.ParserId != "suruz" && req.ParserId != "miit" {
 		return &schedule.SyncScheduleResponse{
 			Success: false,
 			Message: "unsupported parser_id: " + req.ParserId,
@@ -79,23 +81,60 @@ func (h *Handler) SyncSchedule(ctx context.Context, req *schedule.SyncScheduleRe
 	go func() {
 		// Use background context since the request context will be canceled
 		bgCtx := context.Background()
-		stats, err := suruz.Sync(bgCtx, suruz.Config{
-			APIBase:      payload.APIBase,
-			DSN:          h.postgresDSN(),
-			FilialID:     filialID,
-			SourceIDs:    sourceIDs,
-			SourceParam:  payload.SourceParam,
-			LimitSources: payload.LimitSources,
-			Timeout:      60 * time.Second,
-			TermName:     payload.TermName,
-			Logger:       h.log,
-		})
+
+		var stats struct {
+			Groups           int
+			Teachers         int
+			Schedules        int
+			Events           int
+			AffectedGroupIDs []string
+		}
+		var err error
+
+		if req.ParserId == "miit" {
+			miitStats, mErr := miit.Sync(bgCtx, miit.Config{
+				APIBase:   payload.APIBase,
+				DSN:       h.postgresDSN(),
+				FilialID:  filialID,
+				GroupName: sourceIDs,
+				Institute: payload.Institute,
+				Timeout:   60 * time.Second,
+				TermName:  payload.TermName,
+				Logger:    h.log,
+			})
+			stats.Groups = miitStats.Groups
+			stats.Teachers = miitStats.Teachers
+			stats.Schedules = miitStats.Schedules
+			stats.Events = miitStats.Events
+			stats.AffectedGroupIDs = miitStats.AffectedGroupIDs
+			err = mErr
+		} else {
+			suruzStats, sErr := suruz.Sync(bgCtx, suruz.Config{
+				APIBase:      payload.APIBase,
+				DSN:          h.postgresDSN(),
+				FilialID:     filialID,
+				SourceIDs:    sourceIDs,
+				SourceParam:  payload.SourceParam,
+				LimitSources: payload.LimitSources,
+				Timeout:      60 * time.Second,
+				TermName:     payload.TermName,
+				Logger:       h.log,
+			})
+			stats.Groups = suruzStats.Groups
+			stats.Teachers = suruzStats.Teachers
+			stats.Schedules = suruzStats.Schedules
+			stats.Events = suruzStats.Events
+			stats.AffectedGroupIDs = suruzStats.AffectedGroupIDs
+			err = sErr
+		}
+
 		if err != nil {
-			h.log.Error("background Suruz sync failed", zap.Error(err))
+			h.log.Error("background sync failed", zap.String("parser", req.ParserId), zap.Error(err))
 			return
 		}
 
-		h.log.Info("background Suruz sync complete",
+		h.log.Info("background sync complete",
+			zap.String("parser", req.ParserId),
 			zap.Int("groups", stats.Groups),
 			zap.Int("teachers", stats.Teachers),
 			zap.Int("schedules", stats.Schedules),

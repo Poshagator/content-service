@@ -19,7 +19,6 @@ import (
 const (
 	DefaultAPIBase  = "http://api.apps.inforino.ru/company/55193/suruz"
 	DefaultFilialID = "4888f1e4-5916-45ef-a485-0d0381872968"
-	DefaultDSN      = "postgres://postgres:password@localhost:5432/postgres?sslmode=disable"
 	DefaultTermName = "Актуальное расписание МГИМО"
 )
 
@@ -55,6 +54,9 @@ type weekData struct {
 
 func Sync(ctx context.Context, cfg Config) (Stats, error) {
 	cfg = cfg.withDefaults()
+	if strings.TrimSpace(cfg.DSN) == "" {
+		return Stats{}, fmt.Errorf("dsn is required")
+	}
 
 	filialID, err := uuid.Parse(cfg.FilialID)
 	if err != nil {
@@ -143,9 +145,6 @@ func Sync(ctx context.Context, cfg Config) (Stats, error) {
 func (c Config) withDefaults() Config {
 	if strings.TrimSpace(c.APIBase) == "" {
 		c.APIBase = DefaultAPIBase
-	}
-	if strings.TrimSpace(c.DSN) == "" {
-		c.DSN = DefaultDSN
 	}
 	if strings.TrimSpace(c.FilialID) == "" {
 		c.FilialID = DefaultFilialID
