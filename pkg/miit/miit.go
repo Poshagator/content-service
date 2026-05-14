@@ -6,6 +6,7 @@ import (
 	"hash/fnv"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -287,6 +288,7 @@ func (i *importer) syncRegularSchedule(ctx context.Context, client *http.Client,
 		return err
 	}
 
+	effectiveFrom, effectiveTo := parseScheduleEffectiveRange(doc)
 	var events []regularEvent
 	for week := 1; week <= 2; week++ {
 		events = append(events, parseRegularWeekEvents(doc, week)...)
@@ -301,7 +303,7 @@ func (i *importer) syncRegularSchedule(ctx context.Context, client *http.Client,
 		if err != nil {
 			return err
 		}
-		err = i.importMiitEvent(ctx, tx, group, event.SubjectName, event.TeacherName, event.RoomName, event.Week, event.DayOfWeek, event.LessonNum, nil, false, event.LessonType, event.Comment, stats)
+		err = i.importMiitEvent(ctx, tx, group, event.SubjectName, event.TeacherName, event.RoomName, event.Week, event.DayOfWeek, event.LessonNum, nil, effectiveFrom, effectiveTo, false, event.LessonType, event.Comment, stats)
 		if err != nil {
 			tx.Rollback(ctx)
 			continue
@@ -463,7 +465,7 @@ func (i *importer) syncSessionSchedule(ctx context.Context, client *http.Client,
 		if err != nil {
 			return err
 		}
-		err = i.importMiitEvent(ctx, tx, group, event.SubjectName, event.TeacherName, event.RoomName, 0, event.DayOfWeek, 0, &event.OccursOn, true, event.LessonType, event.Comment, stats, event.StartsAt, event.EndsAt)
+		err = i.importMiitEvent(ctx, tx, group, event.SubjectName, event.TeacherName, event.RoomName, 0, event.DayOfWeek, 0, &event.OccursOn, nil, nil, true, event.LessonType, event.Comment, stats, event.StartsAt, event.EndsAt)
 		if err != nil {
 			tx.Rollback(ctx)
 			continue
@@ -550,6 +552,25 @@ func parseTimeRange(value string) (string, string) {
 	return startsAt, endsAt
 }
 
+func parseScheduleEffectiveRange(doc *goquery.Document) (*time.Time, *time.Time) {
+	text := cleanText(doc.Text())
+	re := regexp.MustCompile(`Расписание действует\s+с\s+(\d{2}\.\d{2}\.\d{4})\s+по\s+(\d{2}\.\d{2}\.\d{4})`)
+	matches := re.FindStringSubmatch(text)
+	if len(matches) != 3 {
+		return nil, nil
+	}
+
+	startsOn, err := time.Parse("02.01.2006", matches[1])
+	if err != nil {
+		return nil, nil
+	}
+	endsOn, err := time.Parse("02.01.2006", matches[2])
+	if err != nil {
+		return nil, nil
+	}
+	return &startsOn, &endsOn
+}
+
 func fetchDocument(ctx context.Context, client *http.Client, rawURL string) (*goquery.Document, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, rawURL, nil)
 	if err != nil {
@@ -627,7 +648,7 @@ type importer struct {
 	affectedGroups map[uuid.UUID]struct{}
 }
 
-func (i *importer) importMiitEvent(ctx context.Context, tx pgx.Tx, group miitGroup, lessonName, teacherName, roomName string, week, dayOfWeek, lessonNum int, occursOn *time.Time, isExam bool, lessonType, comment string, stats *Stats, customTime ...string) error {
+func (i *importer) importMiitEvent(ctx context.Context, tx pgx.Tx, group miitGroup, lessonName, teacherName, roomName string, week, dayOfWeek, lessonNum int, occursOn, effectiveFrom, effectiveTo *time.Time, isExam bool, lessonType, comment string, stats *Stats, customTime ...string) error {
 	termID, err := i.ensureTerm(ctx, tx)
 	if err != nil {
 		return err
@@ -686,9 +707,9 @@ func (i *importer) importMiitEvent(ctx context.Context, tx pgx.Tx, group miitGro
 
 	_, err = tx.Exec(ctx, `
 		INSERT INTO public.timetable_entry (
-			term_id, group_id, subject_id, teacher_id, classroom_id, day_of_week, week_type, occurs_on, starts_at, ends_at, source, source_event_id, is_exam, lesson_type, comment, updated_at
+			term_id, group_id, subject_id, teacher_id, classroom_id, day_of_week, week_type, occurs_on, effective_from, effective_to, starts_at, ends_at, source, source_event_id, is_exam, lesson_type, comment, updated_at
 		) VALUES (
-			$1, $2, $3, $4, $5, $6, $7, $8, $9::time, $10::time, 'miit', $11, $12, $13, $14, now()
+			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::time, $12::time, 'miit', $13, $14, $15, $16, now()
 		)
 		ON CONFLICT ON CONSTRAINT timetable_entry_source_event_unique DO UPDATE SET
 			subject_id = EXCLUDED.subject_id,
@@ -697,13 +718,15 @@ func (i *importer) importMiitEvent(ctx context.Context, tx pgx.Tx, group miitGro
 			day_of_week = EXCLUDED.day_of_week,
 			week_type = EXCLUDED.week_type,
 			occurs_on = EXCLUDED.occurs_on,
+			effective_from = EXCLUDED.effective_from,
+			effective_to = EXCLUDED.effective_to,
 			starts_at = EXCLUDED.starts_at,
 			ends_at = EXCLUDED.ends_at,
 			is_exam = EXCLUDED.is_exam,
 			lesson_type = EXCLUDED.lesson_type,
 			comment = EXCLUDED.comment,
 			updated_at = now()
-	`, termID, groupID, subjectID, teacherID, roomID, dayOfWeek, weekType, occursOn, nullIfEmptyString(startsAt), nullIfEmptyString(endsAt), sourceEventID, isExam, nullIfEmptyString(lessonType), nullIfEmptyString(comment))
+	`, termID, groupID, subjectID, teacherID, roomID, dayOfWeek, weekType, occursOn, effectiveFrom, effectiveTo, nullIfEmptyString(startsAt), nullIfEmptyString(endsAt), sourceEventID, isExam, nullIfEmptyString(lessonType), nullIfEmptyString(comment))
 
 	return err
 }
