@@ -9,6 +9,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
@@ -25,24 +27,25 @@ const (
 )
 
 type Config struct {
-	APIBase   string
-	DSN       string
-	FilialID  string
-	GroupName string
-	Institute string
-	Timeout   time.Duration
-	TermName  string
-	Logger    *zap.Logger
+	APIBase     string
+	DSN         string
+	FilialID    string
+	GroupName   string
+	Institute   string
+	Timeout     time.Duration
+	Concurrency int
+	TermName    string
+	Logger      *zap.Logger
 }
 
 type Stats struct {
-	Groups           int
-	Teachers         int
-	Schedules        int
-	FetchErrors      int
-	Events           int
-	EntriesCreated   int
-	EntriesExisting  int
+	Groups           int64
+	Teachers         int64
+	Schedules        int64
+	FetchErrors      int64
+	Events           int64
+	EntriesCreated   int64
+	EntriesExisting  int64
 	AffectedGroupIDs []string
 }
 
@@ -105,66 +108,87 @@ func Sync(ctx context.Context, cfg Config) (Stats, error) {
 		affectedGroups: make(map[uuid.UUID]struct{}),
 	}
 
+	sem := make(chan struct{}, cfg.Concurrency)
+	var wg sync.WaitGroup
+
 	total := len(groups)
 	startedAt := time.Now()
 	for idx, group := range groups {
-		groupStartedAt := time.Now()
-		if cfg.Logger != nil && (idx == 0 || (idx+1)%10 == 0 || idx+1 == total) {
-			cfg.Logger.Info("fetching and importing MIIT schedule",
-				zap.Int("current", idx+1),
-				zap.Int("total", total),
-				zap.String("group", group.Name),
-				zap.Duration("elapsed", time.Since(startedAt)),
-			)
-		}
+		wg.Add(1)
+		sem <- struct{}{}
 
-		// Sync regular schedule (Odd/Even weeks)
-		err := imp.syncRegularSchedule(ctx, client, cfg.APIBase, group, &stats)
-		if err != nil {
-			stats.FetchErrors++
-			if cfg.Logger != nil {
-				cfg.Logger.Warn("failed to sync MIIT regular schedule",
+		go func(idx int, group miitGroup) {
+			defer wg.Done()
+			defer func() { <-sem }()
+
+			groupStartedAt := time.Now()
+			if cfg.Logger != nil && (idx == 0 || (idx+1)%25 == 0 || idx+1 == total) {
+				cfg.Logger.Info("fetching and importing MIIT schedule",
+					zap.Int("current", idx+1),
+					zap.Int("total", total),
 					zap.String("group", group.Name),
-					zap.Error(err),
-					zap.Duration("groupElapsed", time.Since(groupStartedAt)),
+					zap.Duration("elapsed", time.Since(startedAt)),
 				)
 			}
-		} else {
-			stats.Schedules++
-		}
 
-		// Sync session schedule (Exams)
-		err = imp.syncSessionSchedule(ctx, client, cfg.APIBase, group, &stats)
-		if err != nil {
+			// Sync regular schedule (Odd/Even weeks)
+			err := imp.syncRegularSchedule(ctx, client, cfg.APIBase, group, &stats)
+			if err != nil {
+				atomic.AddInt64(&stats.FetchErrors, 1)
+				if cfg.Logger != nil {
+					cfg.Logger.Warn("failed to sync MIIT regular schedule",
+						zap.String("group", group.Name),
+						zap.Error(err),
+						zap.Duration("groupElapsed", time.Since(groupStartedAt)),
+					)
+				}
+			} else {
+				atomic.AddInt64(&stats.Schedules, 1)
+			}
+
+			// Sync session schedule (Exams)
+			err = imp.syncSessionSchedule(ctx, client, cfg.APIBase, group, &stats)
+			if err != nil {
+				if cfg.Logger != nil {
+					cfg.Logger.Warn("failed to sync MIIT session schedule",
+						zap.String("group", group.Name),
+						zap.Error(err),
+						zap.Duration("groupElapsed", time.Since(groupStartedAt)),
+					)
+				}
+			}
+
+			curEvents := atomic.LoadInt64(&stats.Events)
+			curErrors := atomic.LoadInt64(&stats.FetchErrors)
+
 			if cfg.Logger != nil {
-				cfg.Logger.Warn("failed to sync MIIT session schedule",
+				cfg.Logger.Info("MIIT group processed",
+					zap.Int("current", idx+1),
+					zap.Int("total", total),
 					zap.String("group", group.Name),
-					zap.Error(err),
 					zap.Duration("groupElapsed", time.Since(groupStartedAt)),
+					zap.Int64("eventsTotal", curEvents),
+					zap.Int64("fetchErrorsTotal", curErrors),
 				)
 			}
-		}
-		if cfg.Logger != nil {
-			cfg.Logger.Info("MIIT group processed",
-				zap.Int("current", idx+1),
-				zap.Int("total", total),
-				zap.String("group", group.Name),
-				zap.Duration("groupElapsed", time.Since(groupStartedAt)),
-				zap.Int("eventsTotal", stats.Events),
-				zap.Int("fetchErrorsTotal", stats.FetchErrors),
-			)
-		}
-		if cfg.Logger != nil && (idx == 0 || (idx+1)%25 == 0 || idx+1 == total) {
-			cfg.Logger.Info("MIIT sync progress",
-				zap.Int("current", idx+1),
-				zap.Int("total", total),
-				zap.Int("events", stats.Events),
-				zap.Int("fetchErrors", stats.FetchErrors),
-				zap.Int("affectedGroups", len(imp.affectedGroups)),
-				zap.Duration("elapsed", time.Since(startedAt)),
-			)
-		}
+
+			if cfg.Logger != nil && (idx == 0 || (idx+1)%50 == 0 || idx+1 == total) {
+				imp.mu.RLock()
+				affectedCount := len(imp.affectedGroups)
+				imp.mu.RUnlock()
+
+				cfg.Logger.Info("MIIT sync progress",
+					zap.Int("current", idx+1),
+					zap.Int("total", total),
+					zap.Int64("events", curEvents),
+					zap.Int64("fetchErrors", curErrors),
+					zap.Int("affectedGroups", affectedCount),
+					zap.Duration("elapsed", time.Since(startedAt)),
+				)
+			}
+		}(idx, group)
 	}
+	wg.Wait()
 
 	stats.AffectedGroupIDs = imp.affectedGroupIDs()
 	return stats, nil
@@ -309,7 +333,7 @@ func (i *importer) syncRegularSchedule(ctx context.Context, client *http.Client,
 		if err != nil {
 			return err
 		}
-		stats.Events++
+		atomic.AddInt64(&stats.Events, 1)
 	}
 	return tx.Commit(ctx)
 }
@@ -329,7 +353,9 @@ func (i *importer) clearGroupSchedule(ctx context.Context, group miitGroup) erro
 	if err != nil {
 		return err
 	}
+	i.mu.Lock()
 	i.affectedGroups[groupID] = struct{}{}
+	i.mu.Unlock()
 
 	_, err = tx.Exec(ctx, `
 DELETE FROM public.timetable_entry
@@ -474,7 +500,7 @@ func (i *importer) syncSessionSchedule(ctx context.Context, client *http.Client,
 		if err != nil {
 			return err
 		}
-		stats.Events++
+		atomic.AddInt64(&stats.Events, 1)
 	}
 	return tx.Commit(ctx)
 }
@@ -573,23 +599,38 @@ func parseScheduleEffectiveRange(doc *goquery.Document) (*time.Time, *time.Time)
 }
 
 func fetchDocument(ctx context.Context, client *http.Client, rawURL string) (*goquery.Document, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, rawURL, nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36")
-	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
-	req.Header.Set("Accept-Language", "ru-RU,ru;q=0.9,en;q=0.8")
+	var lastErr error
+	for attempt := 1; attempt <= 3; attempt++ {
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, rawURL, nil)
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36")
+		req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+		req.Header.Set("Accept-Language", "ru-RU,ru;q=0.9,en;q=0.8")
 
-	res, err := client.Do(req)
-	if err != nil {
-		return nil, err
+		res, err := client.Do(req)
+		if err != nil {
+			lastErr = err
+			if ctx.Err() != nil {
+				return nil, ctx.Err()
+			}
+			time.Sleep(time.Duration(attempt) * 500 * time.Millisecond)
+			continue
+		}
+		defer res.Body.Close()
+
+		if res.StatusCode < 200 || res.StatusCode >= 300 {
+			lastErr = fmt.Errorf("GET %s: status %s", rawURL, res.Status)
+			if res.StatusCode == http.StatusTooManyRequests || res.StatusCode >= 500 {
+				time.Sleep(time.Duration(attempt) * time.Second)
+				continue
+			}
+			return nil, lastErr
+		}
+		return goquery.NewDocumentFromReader(res.Body)
 	}
-	defer res.Body.Close()
-	if res.StatusCode < 200 || res.StatusCode >= 300 {
-		return nil, fmt.Errorf("GET %s: status %s", rawURL, res.Status)
-	}
-	return goquery.NewDocumentFromReader(res.Body)
+	return nil, fmt.Errorf("after 3 attempts: %w", lastErr)
 }
 
 func (c Config) withDefaults() Config {
@@ -601,6 +642,9 @@ func (c Config) withDefaults() Config {
 	}
 	if c.Timeout <= 0 {
 		c.Timeout = 30 * time.Second
+	}
+	if c.Concurrency <= 0 {
+		c.Concurrency = 10
 	}
 	if strings.TrimSpace(c.TermName) == "" {
 		c.TermName = DefaultTermName
@@ -648,6 +692,7 @@ type importer struct {
 	groups         map[string]uuid.UUID
 	teachers       map[string]uuid.UUID
 	affectedGroups map[uuid.UUID]struct{}
+	mu             sync.RWMutex
 }
 
 func (i *importer) importMiitEvent(ctx context.Context, tx pgx.Tx, group miitGroup, lessonName, teacherName, roomName string, week, dayOfWeek, lessonNum int, occursOn, effectiveFrom, effectiveTo *time.Time, isExam bool, lessonType, comment string, stats *Stats, customTime ...string) error {
@@ -660,7 +705,9 @@ func (i *importer) importMiitEvent(ctx context.Context, tx pgx.Tx, group miitGro
 	if err != nil {
 		return err
 	}
+	i.mu.Lock()
 	i.affectedGroups[groupID] = struct{}{}
+	i.mu.Unlock()
 
 	subjectID, err := i.ensureSubject(ctx, tx, lessonName)
 	if err != nil {
@@ -753,6 +800,15 @@ func nullIfEmptyString(s string) *string {
 }
 
 func (i *importer) ensureTerm(ctx context.Context, tx pgx.Tx) (uuid.UUID, error) {
+	i.mu.RLock()
+	if i.termID != uuid.Nil {
+		defer i.mu.RUnlock()
+		return i.termID, nil
+	}
+	i.mu.RUnlock()
+
+	i.mu.Lock()
+	defer i.mu.Unlock()
 	if i.termID != uuid.Nil {
 		return i.termID, nil
 	}
@@ -774,9 +830,19 @@ func (i *importer) ensureTerm(ctx context.Context, tx pgx.Tx) (uuid.UUID, error)
 }
 
 func (i *importer) ensureGroup(ctx context.Context, tx pgx.Tx, group miitGroup) (uuid.UUID, error) {
+	i.mu.RLock()
+	if id, ok := i.groups[group.Name]; ok {
+		defer i.mu.RUnlock()
+		return id, nil
+	}
+	i.mu.RUnlock()
+
+	i.mu.Lock()
+	defer i.mu.Unlock()
 	if id, ok := i.groups[group.Name]; ok {
 		return id, nil
 	}
+
 	courseName := miitCourseName(group.Course)
 	var id uuid.UUID
 	err := tx.QueryRow(ctx, `
@@ -837,9 +903,19 @@ func miitCourseName(course int) string {
 }
 
 func (i *importer) ensureSubject(ctx context.Context, tx pgx.Tx, name string) (uuid.UUID, error) {
+	i.mu.RLock()
+	if id, ok := i.subjects[name]; ok {
+		defer i.mu.RUnlock()
+		return id, nil
+	}
+	i.mu.RUnlock()
+
+	i.mu.Lock()
+	defer i.mu.Unlock()
 	if id, ok := i.subjects[name]; ok {
 		return id, nil
 	}
+
 	var id uuid.UUID
 	err := tx.QueryRow(ctx, `SELECT id FROM public.edu_subject WHERE name = $1 LIMIT 1`, name).Scan(&id)
 	if err == pgx.ErrNoRows {
@@ -854,6 +930,15 @@ func (i *importer) ensureSubject(ctx context.Context, tx pgx.Tx, name string) (u
 
 func (i *importer) ensureTeacher(ctx context.Context, tx pgx.Tx, fullName string) (uuid.UUID, error) {
 	fullName = strings.TrimSpace(fullName)
+	i.mu.RLock()
+	if id, ok := i.teachers[fullName]; ok {
+		defer i.mu.RUnlock()
+		return id, nil
+	}
+	i.mu.RUnlock()
+
+	i.mu.Lock()
+	defer i.mu.Unlock()
 	if id, ok := i.teachers[fullName]; ok {
 		return id, nil
 	}
@@ -896,9 +981,19 @@ RETURNING id
 }
 
 func (i *importer) ensureRoom(ctx context.Context, tx pgx.Tx, name string) (uuid.UUID, error) {
+	i.mu.RLock()
+	if id, ok := i.rooms[name]; ok {
+		defer i.mu.RUnlock()
+		return id, nil
+	}
+	i.mu.RUnlock()
+
+	i.mu.Lock()
+	defer i.mu.Unlock()
 	if id, ok := i.rooms[name]; ok {
 		return id, nil
 	}
+
 	var id uuid.UUID
 	err := tx.QueryRow(ctx, `SELECT id FROM public.room WHERE filial_id = $1 AND name = $2 LIMIT 1`, i.filialID, name).Scan(&id)
 	if err == pgx.ErrNoRows {
@@ -912,6 +1007,8 @@ func (i *importer) ensureRoom(ctx context.Context, tx pgx.Tx, name string) (uuid
 }
 
 func (i *importer) affectedGroupIDs() []string {
+	i.mu.RLock()
+	defer i.mu.RUnlock()
 	ids := make([]string, 0, len(i.affectedGroups))
 	for id := range i.affectedGroups {
 		ids = append(ids, id.String())

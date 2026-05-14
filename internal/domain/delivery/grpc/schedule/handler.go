@@ -42,6 +42,8 @@ type syncPayload struct {
 	TermName      string `json:"term_name"`
 	Institute     string `json:"institute"`
 	Organization  string `json:"organization"`
+	FromDate      string `json:"from_date"`
+	ToDate        string `json:"to_date"`
 }
 
 func (h *Handler) SyncSchedule(ctx context.Context, req *schedule.SyncScheduleRequest) (*schedule.SyncScheduleResponse, error) {
@@ -87,24 +89,25 @@ func (h *Handler) SyncSchedule(ctx context.Context, req *schedule.SyncScheduleRe
 		bgCtx := context.Background()
 
 		var stats struct {
-			Groups           int
-			Teachers         int
-			Schedules        int
-			Events           int
+			Groups           int64
+			Teachers         int64
+			Schedules        int64
+			Events           int64
 			AffectedGroupIDs []string
 		}
 		var err error
 
 		if req.ParserId == "miit" {
 			miitStats, mErr := miit.Sync(bgCtx, miit.Config{
-				APIBase:   payload.APIBase,
-				DSN:       h.postgresDSN(),
-				FilialID:  filialID,
-				GroupName: sourceIDs,
-				Institute: payload.Institute,
-				Timeout:   60 * time.Second,
-				TermName:  payload.TermName,
-				Logger:    h.log,
+				APIBase:     payload.APIBase,
+				DSN:         h.postgresDSN(),
+				FilialID:    filialID,
+				GroupName:   sourceIDs,
+				Institute:   payload.Institute,
+				Timeout:     60 * time.Second,
+				Concurrency: 10,
+				TermName:    payload.TermName,
+				Logger:      h.log,
 			})
 			stats.Groups = miitStats.Groups
 			stats.Teachers = miitStats.Teachers
@@ -125,6 +128,8 @@ func (h *Handler) SyncSchedule(ctx context.Context, req *schedule.SyncScheduleRe
 				Timeout:       60 * time.Second,
 				TermName:      payload.TermName,
 				Logger:        h.log,
+				FromDate:      parsePayloadDate(payload.FromDate),
+				ToDate:        parsePayloadDate(payload.ToDate),
 			})
 			stats.Groups = campusStats.Groups
 			stats.Teachers = campusStats.Teachers
@@ -144,10 +149,10 @@ func (h *Handler) SyncSchedule(ctx context.Context, req *schedule.SyncScheduleRe
 				TermName:     payload.TermName,
 				Logger:       h.log,
 			})
-			stats.Groups = suruzStats.Groups
-			stats.Teachers = suruzStats.Teachers
-			stats.Schedules = suruzStats.Schedules
-			stats.Events = suruzStats.Events
+			stats.Groups = int64(suruzStats.Groups)
+			stats.Teachers = int64(suruzStats.Teachers)
+			stats.Schedules = int64(suruzStats.Schedules)
+			stats.Events = int64(suruzStats.Events)
 			stats.AffectedGroupIDs = suruzStats.AffectedGroupIDs
 			err = sErr
 		}
@@ -159,10 +164,10 @@ func (h *Handler) SyncSchedule(ctx context.Context, req *schedule.SyncScheduleRe
 
 		h.log.Info("background sync complete",
 			zap.String("parser", req.ParserId),
-			zap.Int("groups", stats.Groups),
-			zap.Int("teachers", stats.Teachers),
-			zap.Int("schedules", stats.Schedules),
-			zap.Int("events", stats.Events),
+			zap.Int64("groups", stats.Groups),
+			zap.Int64("teachers", stats.Teachers),
+			zap.Int64("schedules", stats.Schedules),
+			zap.Int64("events", stats.Events),
 			zap.Int("affectedGroups", len(stats.AffectedGroupIDs)),
 		)
 
@@ -194,4 +199,11 @@ func (h *Handler) postgresDSN() string {
 		h.cfg.Postgres.DBName,
 		h.cfg.Postgres.SSLMode,
 	)
+}
+func parsePayloadDate(s string) time.Time {
+	if s == "" {
+		return time.Time{}
+	}
+	t, _ := time.Parse("2006-01-02", s)
+	return t
 }

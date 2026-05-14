@@ -8,7 +8,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
 	"time"
 
@@ -37,22 +36,54 @@ type Config struct {
 	Timeout       time.Duration
 	TermName      string
 	Logger        *zap.Logger
+	// New fields
+	FromDate time.Time
+	ToDate   time.Time
 }
 
 type Stats struct {
-	Groups           int
-	Teachers         int
-	Schedules        int
-	FetchErrors      int
-	Events           int
-	EntriesCreated   int
-	EntriesExisting  int
+	Groups           int64
+	Teachers         int64
+	Schedules        int64
+	FetchErrors      int64
+	Events           int64
+	EntriesCreated   int64
+	EntriesExisting  int64
 	AffectedGroupIDs []string
 }
 
-type campusTeacher struct {
-	ID   string `json:"_id"`
-	Name string `json:"name"`
+type campusEntity struct {
+	ID    string `json:"_id"`
+	Name  string `json:"name"`
+	Type  string `json:"type"`
+	Extra struct {
+		Course int    `json:"course"`
+		Degree string `json:"degree"`
+	} `json:"extra"`
+}
+
+type nativeScheduleResponse struct {
+	Entity campusEntity `json:"entity"`
+	Days   []nativeDay  `json:"days"`
+}
+
+type nativeDay struct {
+	Date      string           `json:"date"`
+	Intervals []nativeInterval `json:"intervals"`
+}
+
+type nativeInterval struct {
+	Number  int            `json:"number"`
+	Start   string         `json:"start"`
+	End     string         `json:"end"`
+	Lessons []nativeLesson `json:"lessons"`
+}
+
+type nativeLesson struct {
+	Subject   string   `json:"subject"`
+	Type      string   `json:"type"`
+	Classroom string   `json:"classroom"`
+	Teachers  []string `json:"teachers"`
 }
 
 type employeeSearchResponse struct {
@@ -101,9 +132,15 @@ type kfuSubject struct {
 }
 
 type scheduleSource struct {
-	EmployeeID int
+	ID         string // Campus Entity ID
+	EmployeeID int    // KFU Employee ID (for hybrid mode)
 	Name       string
 	Position   string
+	Type       string // "Teacher" or "Group"
+	Extra      struct {
+		Course int
+		Degree string
+	}
 }
 
 func Sync(ctx context.Context, cfg Config) (Stats, error) {
@@ -150,25 +187,56 @@ func Sync(ctx context.Context, cfg Config) (Stats, error) {
 	}
 
 	total := len(sources)
+	isKFU := cfg.Organization == DefaultOrganization
+
 	for idx, source := range sources {
 		if cfg.Logger != nil && (idx == 0 || (idx+1)%25 == 0 || idx+1 == total) {
-			cfg.Logger.Info("fetching and importing Campus schedule", zap.Int("current", idx+1), zap.Int("total", total), zap.Int("employeeID", source.EmployeeID), zap.String("teacher", source.Name))
+			cfg.Logger.Info("fetching and importing Campus schedule",
+				zap.Int("current", idx+1),
+				zap.Int("total", total),
+				zap.String("type", source.Type),
+				zap.String("id", source.ID),
+				zap.Int("employeeID", source.EmployeeID),
+				zap.String("name", source.Name),
+			)
 		}
-		schedule, err := fetchSchedule(ctx, client, cfg.KFUAPIBase, source.EmployeeID)
-		if err != nil {
-			stats.FetchErrors++
-			if cfg.Logger != nil {
-				cfg.Logger.Warn("failed to fetch Campus/KFU schedule", zap.Int("employeeID", source.EmployeeID), zap.Error(err))
+
+		if isKFU && source.EmployeeID > 0 {
+			// Hybrid Mode (KPFU)
+			schedule, err := fetchSchedule(ctx, client, cfg.KFUAPIBase, source.EmployeeID)
+			if err != nil {
+				stats.FetchErrors++
+				if cfg.Logger != nil {
+					cfg.Logger.Warn("failed to fetch Campus/KFU schedule", zap.Int("employeeID", source.EmployeeID), zap.Error(err))
+				}
+				continue
 			}
-			continue
-		}
-		stats.Schedules++
-		if err := imp.importSchedule(ctx, source, schedule.Subjects, &stats); err != nil {
-			stats.FetchErrors++
-			if cfg.Logger != nil {
-				cfg.Logger.Warn("failed to import Campus/KFU schedule", zap.Int("employeeID", source.EmployeeID), zap.Error(err))
+			stats.Schedules++
+			if err := imp.importSchedule(ctx, source, schedule.Subjects, &stats); err != nil {
+				stats.FetchErrors++
+				if cfg.Logger != nil {
+					cfg.Logger.Warn("failed to import Campus/KFU schedule", zap.Int("employeeID", source.EmployeeID), zap.Error(err))
+				}
+				continue
 			}
-			continue
+		} else {
+			// Native Mode
+			schedule, err := fetchNativeSchedule(ctx, client, cfg.CampusAPIBase, source.ID, cfg.FromDate, cfg.ToDate)
+			if err != nil {
+				stats.FetchErrors++
+				if cfg.Logger != nil {
+					cfg.Logger.Warn("failed to fetch native Campus schedule", zap.String("id", source.ID), zap.Error(err))
+				}
+				continue
+			}
+			stats.Schedules++
+			if err := imp.importNativeSchedule(ctx, source, schedule, &stats); err != nil {
+				stats.FetchErrors++
+				if cfg.Logger != nil {
+					cfg.Logger.Warn("failed to import native Campus schedule", zap.String("id", source.ID), zap.Error(err))
+				}
+				continue
+			}
 		}
 	}
 
@@ -192,6 +260,15 @@ func (c Config) withDefaults() Config {
 	if strings.TrimSpace(c.TermName) == "" {
 		c.TermName = DefaultTermName
 	}
+	if c.FromDate.IsZero() {
+		now := time.Now()
+		// Start of current week (Monday)
+		c.FromDate = now.AddDate(0, 0, -int(now.Weekday())+1)
+	}
+	if c.ToDate.IsZero() {
+		// End of next week
+		c.ToDate = c.FromDate.AddDate(0, 0, 13)
+	}
 	return c
 }
 
@@ -199,49 +276,89 @@ func buildSources(ctx context.Context, client *http.Client, cfg Config) ([]sched
 	if strings.TrimSpace(cfg.SourceIDs) != "" {
 		var sources []scheduleSource
 		for _, raw := range splitList(cfg.SourceIDs) {
-			id, err := strconv.Atoi(raw)
-			if err != nil || id <= 0 {
-				continue
-			}
-			sources = append(sources, scheduleSource{EmployeeID: id})
+			sources = append(sources, scheduleSource{ID: raw, Type: "Teacher"})
 		}
 		return sources, nil
 	}
 
 	if query := strings.TrimSpace(cfg.SourceParam); query != "" {
-		employees, err := searchEmployees(ctx, client, cfg.KFUAPIBase, query)
-		if err != nil {
-			return nil, err
+		if cfg.Organization == DefaultOrganization {
+			employees, err := searchEmployees(ctx, client, cfg.KFUAPIBase, query)
+			if err != nil {
+				return nil, err
+			}
+			return employeesToSources(employees), nil
 		}
-		return employeesToSources(employees), nil
+		// For native mode, we could implement search, but for now we just fetch all
 	}
 
-	teachers, err := fetchCampusTeachers(ctx, client, cfg.CampusAPIBase, cfg.Organization)
+	isKFU := cfg.Organization == DefaultOrganization
+
+	// Fetch Groups
+	groups, err := fetchCampusEntities(ctx, client, cfg.CampusAPIBase, cfg.Organization, "Group")
+	if err != nil {
+		if cfg.Logger != nil {
+			cfg.Logger.Warn("failed to fetch Campus groups", zap.Error(err))
+		}
+	}
+
+	// Fetch Teachers
+	teachers, err := fetchCampusEntities(ctx, client, cfg.CampusAPIBase, cfg.Organization, "Teacher")
 	if err != nil {
 		return nil, err
 	}
-	if cfg.LimitSources > 0 && len(teachers) > cfg.LimitSources {
-		teachers = teachers[:cfg.LimitSources]
+
+	if cfg.LimitSources > 0 {
+		if len(groups) > cfg.LimitSources {
+			groups = groups[:cfg.LimitSources]
+		}
+		if len(teachers) > cfg.LimitSources {
+			teachers = teachers[:cfg.LimitSources]
+		}
 	}
 
-	sources := make([]scheduleSource, 0, len(teachers))
-	seen := make(map[int]struct{})
-	for _, teacher := range teachers {
-		name := strings.TrimSpace(teacher.Name)
-		if name == "" || strings.HasPrefix(name, "_") {
-			continue
-		}
-		employees, err := searchEmployees(ctx, client, cfg.KFUAPIBase, name)
-		if err != nil {
-			continue
-		}
-		for _, source := range employeesToSources(employees) {
-			if _, ok := seen[source.EmployeeID]; ok {
+	sources := make([]scheduleSource, 0, len(teachers)+len(groups))
+	for _, g := range groups {
+		sources = append(sources, scheduleSource{
+			ID:   g.ID,
+			Name: g.Name,
+			Type: "Group",
+			Extra: struct {
+				Course int
+				Degree string
+			}{Course: g.Extra.Course, Degree: g.Extra.Degree},
+		})
+	}
+
+	if isKFU {
+		seen := make(map[int]struct{})
+		for _, teacher := range teachers {
+			name := strings.TrimSpace(teacher.Name)
+			if name == "" || strings.HasPrefix(name, "_") {
 				continue
 			}
-			seen[source.EmployeeID] = struct{}{}
-			sources = append(sources, source)
-			break
+			employees, err := searchEmployees(ctx, client, cfg.KFUAPIBase, name)
+			if err != nil {
+				continue
+			}
+			for _, source := range employeesToSources(employees) {
+				if _, ok := seen[source.EmployeeID]; ok {
+					continue
+				}
+				seen[source.EmployeeID] = struct{}{}
+				source.ID = teacher.ID
+				source.Type = "Teacher"
+				sources = append(sources, source)
+				break
+			}
+		}
+	} else {
+		for _, t := range teachers {
+			sources = append(sources, scheduleSource{
+				ID:   t.ID,
+				Name: t.Name,
+				Type: "Teacher",
+			})
 		}
 	}
 	return sources, nil
@@ -262,13 +379,13 @@ func employeesToSources(employees []kfuEmployee) []scheduleSource {
 	return sources
 }
 
-func fetchCampusTeachers(ctx context.Context, client *http.Client, apiBase, organization string) ([]campusTeacher, error) {
-	rawURL := fmt.Sprintf("%s/organizations/%s/entities?type=Teacher", strings.TrimRight(apiBase, "/"), url.PathEscape(organization))
-	var teachers []campusTeacher
-	if err := getJSON(ctx, client, rawURL, &teachers); err != nil {
-		return nil, fmt.Errorf("fetch Campus teachers: %w", err)
+func fetchCampusEntities(ctx context.Context, client *http.Client, apiBase, organization, entityType string) ([]campusEntity, error) {
+	rawURL := fmt.Sprintf("%s/organizations/%s/entities?type=%s", strings.TrimRight(apiBase, "/"), url.PathEscape(organization), url.QueryEscape(entityType))
+	var entities []campusEntity
+	if err := getJSON(ctx, client, rawURL, &entities); err != nil {
+		return nil, fmt.Errorf("fetch Campus %s: %w", entityType, err)
 	}
-	return teachers, nil
+	return entities, nil
 }
 
 func searchEmployees(ctx context.Context, client *http.Client, apiBase, query string) ([]kfuEmployee, error) {
@@ -291,6 +408,20 @@ func fetchSchedule(ctx context.Context, client *http.Client, apiBase string, emp
 	}
 	if !res.Success {
 		return res, fmt.Errorf("KFU schedule returned success=false")
+	}
+	return res, nil
+}
+
+func fetchNativeSchedule(ctx context.Context, client *http.Client, apiBase, entityID string, from, to time.Time) (nativeScheduleResponse, error) {
+	rawURL := fmt.Sprintf("%s/entities/%s/schedule?from=%s&to=%s",
+		strings.TrimRight(apiBase, "/"),
+		url.PathEscape(entityID),
+		from.Format("2006-01-02"),
+		to.Format("2006-01-02"),
+	)
+	var res nativeScheduleResponse
+	if err := getJSON(ctx, client, rawURL, &res); err != nil {
+		return res, fmt.Errorf("fetch native schedule: %w", err)
 	}
 	return res, nil
 }
@@ -348,7 +479,7 @@ func (i *importer) importSchedule(ctx context.Context, source scheduleSource, su
 	if err != nil {
 		return err
 	}
-	teacherID, err := i.ensureTeacher(ctx, tx, source, subjects[0])
+	teacherID, err := i.ensureTeacher(ctx, tx, source.Name, source.Position)
 	if err != nil {
 		return err
 	}
@@ -360,7 +491,7 @@ func (i *importer) importSchedule(ctx context.Context, source scheduleSource, su
 			continue
 		}
 		for _, groupName := range groups {
-			groupID, err := i.ensureGroup(ctx, tx, groupName)
+			groupID, err := i.ensureGroup(ctx, tx, groupName, 0, "")
 			if err != nil {
 				return err
 			}
@@ -376,7 +507,7 @@ func (i *importer) importSchedule(ctx context.Context, source scheduleSource, su
 			if err != nil {
 				return err
 			}
-			created, err := i.ensureTimetableEntry(ctx, tx, termID, groupID, subjectID, teacherID, roomID, sourceEventID(subject, groupName), subject)
+			created, err := i.ensureTimetableEntry(ctx, tx, termID, groupID, subjectID, &teacherID, roomID, sourceEventID(subject, groupName), subject)
 			if err != nil {
 				return err
 			}
@@ -386,6 +517,99 @@ func (i *importer) importSchedule(ctx context.Context, source scheduleSource, su
 				stats.EntriesExisting++
 			}
 			stats.Events++
+		}
+	}
+	return tx.Commit(ctx)
+}
+
+func (i *importer) importNativeSchedule(ctx context.Context, source scheduleSource, schedule nativeScheduleResponse, stats *Stats) error {
+	if len(schedule.Days) == 0 {
+		return nil
+	}
+	tx, err := i.db.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	termID, err := i.ensureTerm(ctx, tx)
+	if err != nil {
+		return err
+	}
+
+	var groupID *uuid.UUID
+	var teacherID *uuid.UUID
+
+	if source.Type == "Group" {
+		id, err := i.ensureGroup(ctx, tx, source.Name, source.Extra.Course, source.Extra.Degree)
+		if err != nil {
+			return err
+		}
+		groupID = &id
+		if _, seen := i.affectedGroups[*groupID]; !seen {
+			stats.Groups++
+		}
+		i.affectedGroups[*groupID] = struct{}{}
+	} else {
+		id, err := i.ensureTeacher(ctx, tx, source.Name, source.Position)
+		if err != nil {
+			return err
+		}
+		teacherID = &id
+		stats.Teachers++
+	}
+
+	for _, day := range schedule.Days {
+		date, err := time.Parse("2006-01-02", day.Date)
+		if err != nil {
+			continue
+		}
+		dayOfWeek := int(date.Weekday())
+		if dayOfWeek == 0 {
+			dayOfWeek = 7
+		}
+
+		for _, interval := range day.Intervals {
+			for _, lesson := range interval.Lessons {
+				subjectID, err := i.ensureSubject(ctx, tx, lesson.Subject)
+				if err != nil {
+					return err
+				}
+
+				roomID, err := i.ensureRoom(ctx, tx, lesson.Classroom)
+				if err != nil {
+					return err
+				}
+
+				// If we are syncing a group, the teacher might be in the lesson data
+				currTeacherID := teacherID
+				if currTeacherID == nil && len(lesson.Teachers) > 0 {
+					id, err := i.ensureTeacher(ctx, tx, lesson.Teachers[0], "")
+					if err != nil {
+						return err
+					}
+					currTeacherID = &id
+				}
+
+				// If we are syncing a teacher, the group is not explicitly in the lesson data in MAI sample,
+				// but let's assume if groupID is nil, we skip or it's a personal schedule.
+				// In our structure, timetable_entry REQUIRES a group_id.
+				if groupID == nil {
+					continue // Or handle global/teacher-only events if supported
+				}
+
+				sourceEventID := nativeSourceEventID(source.ID, day.Date, interval.Number, lesson)
+				created, err := i.ensureNativeTimetableEntry(ctx, tx, termID, *groupID, subjectID, currTeacherID, roomID, sourceEventID, date, dayOfWeek, interval, lesson)
+				if err != nil {
+					return err
+				}
+				if created {
+					stats.EntriesCreated++
+				} else {
+					stats.EntriesExisting++
+				}
+				stats.Events++
+			}
 		}
 	}
 	return tx.Commit(ctx)
@@ -411,14 +635,35 @@ RETURNING id
 	return id, nil
 }
 
-func (i *importer) ensureGroup(ctx context.Context, tx pgx.Tx, name string) (uuid.UUID, error) {
+func (i *importer) ensureGroup(ctx context.Context, tx pgx.Tx, name string, course int, degree string) (uuid.UUID, error) {
 	if id, ok := i.groups[name]; ok {
 		return id, nil
 	}
 	var id uuid.UUID
 	err := tx.QueryRow(ctx, `SELECT id FROM public.edu_group WHERE filial_id = $1 AND name = $2 LIMIT 1`, i.filialID, name).Scan(&id)
 	if err == pgx.ErrNoRows {
-		err = tx.QueryRow(ctx, `INSERT INTO public.edu_group (filial_id, name, source) VALUES ($1, $2, 'campus') RETURNING id`, i.filialID, name).Scan(&id)
+		courseName := ""
+		if course > 0 {
+			courseName = fmt.Sprintf("%d курс", course)
+		}
+		err = tx.QueryRow(ctx, `
+INSERT INTO public.edu_group (filial_id, name, source, course_id, course_name, education_level)
+VALUES ($1, $2, 'campus', NULLIF($3, 0), NULLIF($4, ''), NULLIF($5, ''))
+RETURNING id
+`, i.filialID, name, course, courseName, degree).Scan(&id)
+	} else if err == nil && (course > 0 || degree != "") {
+		// Update metadata if existing
+		courseName := ""
+		if course > 0 {
+			courseName = fmt.Sprintf("%d курс", course)
+		}
+		_, _ = tx.Exec(ctx, `
+UPDATE public.edu_group
+SET course_id = COALESCE(NULLIF($3, 0), course_id),
+    course_name = COALESCE(NULLIF($4, ''), course_name),
+    education_level = COALESCE(NULLIF($5, ''), education_level)
+WHERE id = $1
+`, id, name, course, courseName, degree)
 	}
 	if err != nil {
 		return uuid.Nil, err
@@ -463,16 +708,13 @@ func (i *importer) ensureRoom(ctx context.Context, tx pgx.Tx, name string) (*uui
 	return &id, nil
 }
 
-func (i *importer) ensureTeacher(ctx context.Context, tx pgx.Tx, source scheduleSource, sample kfuSubject) (*uuid.UUID, error) {
-	name := strings.TrimSpace(source.Name)
+func (i *importer) ensureTeacher(ctx context.Context, tx pgx.Tx, name, position string) (uuid.UUID, error) {
+	name = strings.TrimSpace(name)
 	if name == "" {
-		name = fullName(sample.TeacherLastname, sample.TeacherFirstname, sample.TeacherMiddlename)
-	}
-	if name == "" {
-		return nil, nil
+		return uuid.Nil, fmt.Errorf("teacher name is empty")
 	}
 	if id, ok := i.teachers[name]; ok {
-		return &id, nil
+		return id, nil
 	}
 	lastName, firstName, middleName := splitTeacherName(name)
 	var personID uuid.UUID
@@ -489,7 +731,7 @@ RETURNING id
 `, nullIfEmpty(lastName), nullIfEmpty(firstName), nullIfEmpty(middleName)).Scan(&personID)
 	}
 	if err != nil {
-		return nil, err
+		return uuid.Nil, err
 	}
 
 	var staffID uuid.UUID
@@ -499,13 +741,13 @@ RETURNING id
 INSERT INTO public.staff (person_id, filial_id, staff_type, position_title, active)
 VALUES ($1, $2, 'TEACHER', $3, true)
 RETURNING id
-`, personID, i.filialID, nullIfEmpty(source.Position)).Scan(&staffID)
+`, personID, i.filialID, nullIfEmpty(position)).Scan(&staffID)
 	}
 	if err != nil {
-		return nil, err
+		return uuid.Nil, err
 	}
 	i.teachers[name] = staffID
-	return &staffID, nil
+	return staffID, nil
 }
 
 func (i *importer) ensureTimetableEntry(ctx context.Context, tx pgx.Tx, termID, groupID, subjectID uuid.UUID, teacherID, roomID *uuid.UUID, sourceEventID int64, subject kfuSubject) (bool, error) {
@@ -536,6 +778,37 @@ RETURNING xmax = 0
 `, termID, groupID, subjectID, teacherID, roomID, subject.DayWeekSchedule, nullIfZeroTime(startDate), nullIfZeroTime(endDate), subject.BeginTimeSchedule, subject.EndTimeSchedule, weekType, sourceEventID, nullIfEmpty(subject.SubjectKindName), nullIfEmpty(subject.NoteSchedule)).Scan(&created)
 	return created, err
 }
+
+func (i *importer) ensureNativeTimetableEntry(ctx context.Context, tx pgx.Tx, termID, groupID, subjectID uuid.UUID, teacherID, roomID *uuid.UUID, sourceEventID int64, occursOn time.Time, dayOfWeek int, interval nativeInterval, lesson nativeLesson) (bool, error) {
+	var created bool
+	err := tx.QueryRow(ctx, `
+INSERT INTO public.timetable_entry (
+	term_id, group_id, subject_id, teacher_id, classroom_id, day_of_week, week_type, occurs_on, starts_at, ends_at, source, source_event_id, is_exam, lesson_type
+) VALUES (
+	$1, $2, $3, $4, $5, $6, 'ONCE', $7, $8::time, $9::time, 'campus', $10, false, $11
+)
+ON CONFLICT ON CONSTRAINT timetable_entry_source_event_unique DO UPDATE SET
+	subject_id = EXCLUDED.subject_id,
+	teacher_id = EXCLUDED.teacher_id,
+	classroom_id = EXCLUDED.classroom_id,
+	day_of_week = EXCLUDED.day_of_week,
+	occurs_on = EXCLUDED.occurs_on,
+	starts_at = EXCLUDED.starts_at,
+	ends_at = EXCLUDED.ends_at,
+	lesson_type = EXCLUDED.lesson_type,
+	updated_at = now()
+RETURNING xmax = 0
+`, termID, groupID, subjectID, teacherID, roomID, dayOfWeek, occursOn, interval.Start, interval.End, sourceEventID, nullIfEmpty(lesson.Type)).Scan(&created)
+	return created, err
+}
+
+func nativeSourceEventID(entityID, date string, intervalNum int, lesson nativeLesson) int64 {
+	key := fmt.Sprintf("campus-native|%s|%s|%d|%s", entityID, date, intervalNum, lesson.Subject)
+	h := fnv.New64a()
+	_, _ = h.Write([]byte(key))
+	return int64(h.Sum64() & 0x7fffffffffffffff)
+}
+
 
 func parseAPIDate(value string) (time.Time, error) {
 	return time.Parse("02.01.06", strings.TrimSpace(value))
