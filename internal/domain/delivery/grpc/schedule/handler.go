@@ -9,8 +9,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/poshagator/content-service/config"
 	"github.com/poshagator/content-service/internal/domain/usecase/edu"
-	"github.com/poshagator/content-service/pkg/proto/schedule/gen"
+	"github.com/poshagator/content-service/pkg/campus"
 	"github.com/poshagator/content-service/pkg/miit"
+	"github.com/poshagator/content-service/pkg/proto/schedule/gen"
 	"github.com/poshagator/content-service/pkg/suruz"
 	"go.uber.org/zap"
 )
@@ -31,13 +32,16 @@ func NewHandler(log *zap.Logger, cfg *config.ConfigModel, eduUsecase *edu.Usecas
 }
 
 type syncPayload struct {
-	APIBase      string `json:"api_base"`
-	FilialID     string `json:"filial_id"`
-	SourceIDs    string `json:"source_ids"`
-	SourceParam  string `json:"source_param"`
-	LimitSources int    `json:"limit_sources"`
-	TermName     string `json:"term_name"`
-	Institute    string `json:"institute"`
+	APIBase       string `json:"api_base"`
+	CampusAPIBase string `json:"campus_api_base"`
+	KFUAPIBase    string `json:"kfu_api_base"`
+	FilialID      string `json:"filial_id"`
+	SourceIDs     string `json:"source_ids"`
+	SourceParam   string `json:"source_param"`
+	LimitSources  int    `json:"limit_sources"`
+	TermName      string `json:"term_name"`
+	Institute     string `json:"institute"`
+	Organization  string `json:"organization"`
 }
 
 func (h *Handler) SyncSchedule(ctx context.Context, req *schedule.SyncScheduleRequest) (*schedule.SyncScheduleResponse, error) {
@@ -47,7 +51,7 @@ func (h *Handler) SyncSchedule(ctx context.Context, req *schedule.SyncScheduleRe
 		zap.String("parser_id", req.ParserId),
 	)
 
-	if req.ParserId != "" && req.ParserId != "suruz" && req.ParserId != "miit" {
+	if req.ParserId != "" && req.ParserId != "suruz" && req.ParserId != "miit" && req.ParserId != "campus" {
 		return &schedule.SyncScheduleResponse{
 			Success: false,
 			Message: "unsupported parser_id: " + req.ParserId,
@@ -108,6 +112,26 @@ func (h *Handler) SyncSchedule(ctx context.Context, req *schedule.SyncScheduleRe
 			stats.Events = miitStats.Events
 			stats.AffectedGroupIDs = miitStats.AffectedGroupIDs
 			err = mErr
+		} else if req.ParserId == "campus" {
+			campusStats, cErr := campus.Sync(bgCtx, campus.Config{
+				CampusAPIBase: payload.CampusAPIBase,
+				KFUAPIBase:    payload.KFUAPIBase,
+				DSN:           h.postgresDSN(),
+				FilialID:      filialID,
+				Organization:  payload.Organization,
+				SourceIDs:     sourceIDs,
+				SourceParam:   payload.SourceParam,
+				LimitSources:  payload.LimitSources,
+				Timeout:       60 * time.Second,
+				TermName:      payload.TermName,
+				Logger:        h.log,
+			})
+			stats.Groups = campusStats.Groups
+			stats.Teachers = campusStats.Teachers
+			stats.Schedules = campusStats.Schedules
+			stats.Events = campusStats.Events
+			stats.AffectedGroupIDs = campusStats.AffectedGroupIDs
+			err = cErr
 		} else {
 			suruzStats, sErr := suruz.Sync(bgCtx, suruz.Config{
 				APIBase:      payload.APIBase,
@@ -149,14 +173,14 @@ func (h *Handler) SyncSchedule(ctx context.Context, req *schedule.SyncScheduleRe
 				continue
 			}
 			if err := h.eduUsecase.SyncPlannerSourceForGroup(bgCtx, groupID); err != nil {
-				h.log.Warn("failed to refresh planner source after Suruz sync", zap.String("groupID", rawGroupID), zap.Error(err))
+				h.log.Warn("failed to refresh planner source after schedule sync", zap.String("groupID", rawGroupID), zap.Error(err))
 			}
 		}
 	}()
 
 	return &schedule.SyncScheduleResponse{
 		Success: true,
-		Message: "Suruz sync started in background. Check service logs for progress.",
+		Message: "Schedule sync started in background. Check service logs for progress.",
 	}, nil
 }
 
