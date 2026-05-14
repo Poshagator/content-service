@@ -7,6 +7,7 @@ ALTER TABLE public.timetable_entry
     ADD COLUMN IF NOT EXISTS source varchar,
     ADD COLUMN IF NOT EXISTS source_event_id bigint,
     ADD COLUMN IF NOT EXISTS is_exam boolean NOT NULL DEFAULT false,
+    ADD COLUMN IF NOT EXISTS lesson_type varchar,
     ADD COLUMN IF NOT EXISTS comment varchar;
 
 DO $$

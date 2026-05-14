@@ -21,6 +21,7 @@ SELECT
     s.name as subject_name,
     trim(concat_ws(' ', p.last_name, p.first_name, p.middle_name)) as teacher_name,
     COALESCE(r.room_number, r.name, '') as room_name,
+    COALESCE(te.lesson_type, '') AS lesson_type,
     te.is_exam,
     COALESCE(te.comment, '') AS comment
 FROM 

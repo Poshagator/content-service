@@ -16,6 +16,7 @@ type TimetableEntry struct {
 	SubjectName   string    `json:"subject_name"`
 	TeacherName   string    `json:"teacher_name"`
 	RoomName      string    `json:"room_name"`
+	LessonType    string    `json:"lesson_type"`
 	IsExam        bool      `json:"is_exam"`
 	Comment       string    `json:"comment"`
 }

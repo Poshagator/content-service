@@ -149,6 +149,7 @@ CREATE TABLE timetable_entry (
     source         varchar,
     source_event_id bigint,
     is_exam       boolean NOT NULL DEFAULT false,
+    lesson_type   varchar,
     comment       varchar,
     created_at    timestamp NOT NULL DEFAULT now(),
     updated_at    timestamp NOT NULL DEFAULT now(),

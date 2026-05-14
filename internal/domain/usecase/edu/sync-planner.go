@@ -8,6 +8,7 @@ import (
 	entityedu "github.com/poshagator/content-service/internal/domain/entities/edu"
 	"github.com/poshagator/content-service/pkg/proto/planner/gen"
 	"go.uber.org/zap"
+	"strings"
 	"time"
 )
 
@@ -130,10 +131,18 @@ func (u *Usecase) GenerateGroupScheduleTasks(ctx context.Context, groupID uuid.U
 				endTime = endTime[:5]
 			}
 
-			description := fmt.Sprintf("Преподаватель: %s\nАудитория: %s", entry.TeacherName, entry.RoomName)
+			descriptionParts := make([]string, 0, 4)
 			if entry.IsExam {
-				description = "Экзамен\n" + description
+				descriptionParts = append(descriptionParts, "**Экзамен**")
 			}
+			if entry.LessonType != "" {
+				descriptionParts = append(descriptionParts, fmt.Sprintf("**Тип пары:** %s", entry.LessonType))
+			}
+			descriptionParts = append(descriptionParts,
+				fmt.Sprintf("**Преподаватель:** %s", entry.TeacherName),
+				fmt.Sprintf("**Аудитория:** %s", entry.RoomName),
+			)
+			description := strings.Join(descriptionParts, "\n")
 			if entry.Comment != "" {
 				description += "\n" + entry.Comment
 			}

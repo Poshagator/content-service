@@ -98,7 +98,13 @@ func Sync(ctx context.Context, cfg Config) (Stats, error) {
 		rooms:          make(map[string]uuid.UUID),
 		groups:         make(map[string]uuid.UUID),
 		teachers:       make(map[string]uuid.UUID),
+		studyTypes:     make(map[int]string, len(meta.StudyTypes)),
 		affectedGroups: make(map[uuid.UUID]struct{}),
+	}
+	for _, studyType := range meta.StudyTypes {
+		if title := strings.TrimSpace(studyType.Title); studyType.ID != 0 && title != "" {
+			imp.studyTypes[studyType.ID] = title
+		}
 	}
 
 	// 1. Import Metadata (Groups & Teachers) first so they are visible immediately
@@ -167,6 +173,7 @@ type groupsData struct {
 	Faculties  []suruzFaculty   `json:"faculties"`
 	Courses    []suruzCourse    `json:"courses"`
 	StudyForms []suruzStudyForm `json:"study_forms"`
+	StudyTypes []suruzStudyType `json:"study_types"`
 	Groups     []suruzGroup     `json:"groups"`
 	Subgroups  []suruzSubgroup  `json:"subgroups"`
 	Teachers   []suruzTeacher   `json:"teachers"`
@@ -228,6 +235,11 @@ type suruzStudyForm struct {
 	Title string `json:"title"`
 }
 
+type suruzStudyType struct {
+	ID    int    `json:"id"`
+	Title string `json:"title"`
+}
+
 type groupMetadata struct {
 	SourceGroupID    int
 	SourceSubgroupID int
@@ -274,6 +286,7 @@ type suruzEvent struct {
 	TeacherName  string `json:"teacher_name"`
 	Comment      string `json:"comment"`
 	Place        string `json:"place"`
+	StudyTypeID  int    `json:"study_type_id"`
 	Exam         bool   `json:"exam"`
 }
 
@@ -308,6 +321,7 @@ type importer struct {
 	rooms          map[string]uuid.UUID
 	groups         map[string]uuid.UUID
 	teachers       map[string]uuid.UUID
+	studyTypes     map[int]string
 	affectedGroups map[uuid.UUID]struct{}
 }
 
@@ -720,7 +734,7 @@ func (i *importer) importEvent(ctx context.Context, tx pgx.Tx, termID uuid.UUID,
 		if err != nil {
 			return 0, 0, err
 		}
-		wasCreated, err := i.ensureTimetableEntry(ctx, tx, termID, groupID, subjectID, teacherID, roomID, event.ID, postgresDayOfWeek(startDate), occursOn, effectiveFrom, effectiveTo, startsAt, endsAt, weekType, event.Exam, eventComment(event))
+		wasCreated, err := i.ensureTimetableEntry(ctx, tx, termID, groupID, subjectID, teacherID, roomID, event.ID, postgresDayOfWeek(startDate), occursOn, effectiveFrom, effectiveTo, startsAt, endsAt, weekType, event.Exam, i.studyTypes[event.StudyTypeID], eventComment(event))
 		if err != nil {
 			return 0, 0, err
 		}
@@ -1028,13 +1042,13 @@ RETURNING id
 	return staffID, nil
 }
 
-func (i *importer) ensureTimetableEntry(ctx context.Context, tx pgx.Tx, termID, groupID, subjectID uuid.UUID, teacherID, roomID *uuid.UUID, sourceEventID int64, dayOfWeek int, occursOn *time.Time, effectiveFrom, effectiveTo time.Time, startsAt, endsAt, weekType string, isExam bool, comment string) (bool, error) {
+func (i *importer) ensureTimetableEntry(ctx context.Context, tx pgx.Tx, termID, groupID, subjectID uuid.UUID, teacherID, roomID *uuid.UUID, sourceEventID int64, dayOfWeek int, occursOn *time.Time, effectiveFrom, effectiveTo time.Time, startsAt, endsAt, weekType string, isExam bool, lessonType string, comment string) (bool, error) {
 	var created bool
 	err := tx.QueryRow(ctx, `
 INSERT INTO public.timetable_entry (
-	term_id, group_id, subject_id, teacher_id, classroom_id, day_of_week, occurs_on, effective_from, effective_to, starts_at, ends_at, week_type, source, source_event_id, is_exam, comment
+	term_id, group_id, subject_id, teacher_id, classroom_id, day_of_week, occurs_on, effective_from, effective_to, starts_at, ends_at, week_type, source, source_event_id, is_exam, lesson_type, comment
 ) VALUES (
-	$1, $2, $3, $4, $5, $6, $7, $8, $9, $10::time, $11::time, $12, 'suruz', $13, $14, $15
+	$1, $2, $3, $4, $5, $6, $7, $8, $9, $10::time, $11::time, $12, 'suruz', $13, $14, $15, $16
 )
 ON CONFLICT ON CONSTRAINT timetable_entry_source_event_unique DO UPDATE SET
 	subject_id = EXCLUDED.subject_id,
@@ -1048,10 +1062,11 @@ ON CONFLICT ON CONSTRAINT timetable_entry_source_event_unique DO UPDATE SET
 	ends_at = EXCLUDED.ends_at,
 	week_type = EXCLUDED.week_type,
 	is_exam = EXCLUDED.is_exam,
+	lesson_type = EXCLUDED.lesson_type,
 	comment = EXCLUDED.comment,
 	updated_at = now()
 RETURNING xmax = 0
-`, termID, groupID, subjectID, teacherID, roomID, dayOfWeek, occursOn, effectiveFrom, effectiveTo, startsAt, endsAt, weekType, sourceEventID, isExam, nullIfEmpty(comment)).Scan(&created)
+`, termID, groupID, subjectID, teacherID, roomID, dayOfWeek, occursOn, effectiveFrom, effectiveTo, startsAt, endsAt, weekType, sourceEventID, isExam, nullIfEmpty(lessonType), nullIfEmpty(comment)).Scan(&created)
 	return created, err
 }
 
