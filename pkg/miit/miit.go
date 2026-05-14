@@ -329,7 +329,7 @@ func (i *importer) syncRegularSchedule(ctx context.Context, client *http.Client,
 	defer tx.Rollback(ctx)
 
 	for _, event := range events {
-		err = i.importMiitEvent(ctx, tx, group, event.SubjectName, event.TeacherName, event.RoomName, event.Week, event.DayOfWeek, event.LessonNum, nil, effectiveFrom, effectiveTo, false, event.LessonType, event.Comment, stats)
+		err = i.importMiitEvent(ctx, tx, group, event.SubjectName, event.TeacherName, event.RoomName, event.Week, event.DayOfWeek, event.LessonNum, nil, effectiveFrom, effectiveTo, false, event.LessonType, event.Comment, stats, event.StartsAt, event.EndsAt)
 		if err != nil {
 			return err
 		}
@@ -378,26 +378,30 @@ type regularEvent struct {
 	Week        int
 	DayOfWeek   int
 	LessonNum   int
+	StartsAt    string
+	EndsAt      string
 }
 
 func parseRegularWeekEvents(doc *goquery.Document, week int) []regularEvent {
 	var events []regularEvent
 	weekPane := doc.Find(fmt.Sprintf("#week-%d", week))
 	weekPane.Find("div.d-none.d-md-block table.timetable__grid tr").Each(func(rowIdx int, row *goquery.Selection) {
-		lessonNum := rowIdx
-		if lessonNum <= 0 {
+		if rowIdx == 0 {
 			return
 		}
 
+		firstTd := row.Find("td").First()
+		lessonNum, startsAt, endsAt := parseLessonHeader(firstTd)
+
 		row.Find("td.timetable__grid-day").Each(func(dayIdx int, cell *goquery.Selection) {
 			dayOfWeek := dayIdx + 1
-			parseRegularCellEvents(cell, week, dayOfWeek, lessonNum, &events)
+			parseRegularCellEvents(cell, week, dayOfWeek, lessonNum, startsAt, endsAt, &events)
 		})
 	})
 	return events
 }
 
-func parseRegularCellEvents(cell *goquery.Selection, week, dayOfWeek, lessonNum int, events *[]regularEvent) {
+func parseRegularCellEvents(cell *goquery.Selection, week, dayOfWeek, lessonNum int, startsAt, endsAt string, events *[]regularEvent) {
 	cell.Find("div.timetable__grid-day-lesson").Each(func(_ int, lesson *goquery.Selection) {
 		lessonType := cleanText(lesson.Find(".timetable__grid-text_gray").First().Text())
 		subjectName := cleanText(strings.TrimPrefix(cleanText(lesson.Text()), lessonType))
@@ -425,6 +429,8 @@ func parseRegularCellEvents(cell *goquery.Selection, week, dayOfWeek, lessonNum 
 			Week:        week,
 			DayOfWeek:   dayOfWeek,
 			LessonNum:   lessonNum,
+			StartsAt:    startsAt,
+			EndsAt:      endsAt,
 		})
 	})
 }
@@ -682,6 +688,28 @@ func cleanText(text string) string {
 	return strings.TrimSpace(text)
 }
 
+func parseLessonHeader(s *goquery.Selection) (int, string, string) {
+	text := cleanText(s.Text())
+
+	// Lesson number
+	lessonNum := 0
+	numRegex := regexp.MustCompile(`(\d+)`)
+	if m := numRegex.FindStringSubmatch(text); len(m) > 1 {
+		lessonNum, _ = strconv.Atoi(m[1])
+	}
+
+	// Times
+	startsAt := ""
+	endsAt := ""
+	timeRegex := regexp.MustCompile(`(\d{1,2}:\d{2})\s*[—\-]\s*(\d{1,2}:\d{2})`)
+	if m := timeRegex.FindStringSubmatch(text); len(m) > 2 {
+		startsAt = m[1]
+		endsAt = m[2]
+	}
+
+	return lessonNum, startsAt, endsAt
+}
+
 type importer struct {
 	db             *pgxpool.Pool
 	filialID       uuid.UUID
@@ -733,13 +761,13 @@ func (i *importer) importMiitEvent(ctx context.Context, tx pgx.Tx, group miitGro
 	}
 
 	var startsAt, endsAt string
-	if lessonNum > 0 {
-		startsAt, endsAt = lessonTime(lessonNum)
-	} else if len(customTime) > 0 && customTime[0] != "" {
+	if len(customTime) > 0 && customTime[0] != "" {
 		startsAt = customTime[0]
 		if len(customTime) > 1 {
 			endsAt = customTime[1]
 		}
+	} else if lessonNum > 0 {
+		startsAt, endsAt = lessonTime(lessonNum)
 	}
 
 	weekType := "ALL"
@@ -1032,6 +1060,12 @@ func lessonTime(num int) (string, string) {
 		return "16:55", "18:15"
 	case 7:
 		return "18:30", "19:50"
+	case 8:
+		return "20:00", "21:20"
+	case 9:
+		return "21:30", "22:50"
+	case 10:
+		return "23:00", "00:20"
 	default:
 		return "00:00", "00:00"
 	}
