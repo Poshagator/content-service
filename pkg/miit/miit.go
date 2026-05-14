@@ -298,22 +298,20 @@ func (i *importer) syncRegularSchedule(ctx context.Context, client *http.Client,
 		return err
 	}
 
+	tx, err := i.db.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
 	for _, event := range events {
-		tx, err := i.db.Begin(ctx)
-		if err != nil {
-			return err
-		}
 		err = i.importMiitEvent(ctx, tx, group, event.SubjectName, event.TeacherName, event.RoomName, event.Week, event.DayOfWeek, event.LessonNum, nil, effectiveFrom, effectiveTo, false, event.LessonType, event.Comment, stats)
 		if err != nil {
-			tx.Rollback(ctx)
-			continue
-		}
-		if err := tx.Commit(ctx); err != nil {
 			return err
 		}
 		stats.Events++
 	}
-	return nil
+	return tx.Commit(ctx)
 }
 
 func (i *importer) clearGroupSchedule(ctx context.Context, group miitGroup) error {
@@ -455,27 +453,30 @@ func extractCommunityText(details *goquery.Selection) string {
 }
 
 func (i *importer) syncSessionSchedule(ctx context.Context, client *http.Client, apiBase string, group miitGroup, stats *Stats) error {
-	doc, err := fetchDocument(ctx, client, strings.TrimRight(apiBase, "/")+group.TimetableLink+"?type=2")
+	doc, err := fetchDocument(ctx, client, strings.TrimRight(apiBase, "/")+group.TimetableLink+"?type=4")
 	if err != nil {
 		return err
 	}
 
-	for _, event := range parseSessionEvents(doc) {
-		tx, err := i.db.Begin(ctx)
-		if err != nil {
-			return err
-		}
+	events := parseSessionEvents(doc)
+	if len(events) == 0 {
+		return nil
+	}
+
+	tx, err := i.db.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	for _, event := range events {
 		err = i.importMiitEvent(ctx, tx, group, event.SubjectName, event.TeacherName, event.RoomName, 0, event.DayOfWeek, 0, &event.OccursOn, nil, nil, true, event.LessonType, event.Comment, stats, event.StartsAt, event.EndsAt)
 		if err != nil {
-			tx.Rollback(ctx)
-			continue
-		}
-		if err := tx.Commit(ctx); err != nil {
 			return err
 		}
 		stats.Events++
 	}
-	return nil
+	return tx.Commit(ctx)
 }
 
 type sessionEvent struct {
@@ -641,6 +642,7 @@ type importer struct {
 	db             *pgxpool.Pool
 	filialID       uuid.UUID
 	termName       string
+	termID         uuid.UUID
 	subjects       map[string]uuid.UUID
 	rooms          map[string]uuid.UUID
 	groups         map[string]uuid.UUID
@@ -751,6 +753,10 @@ func nullIfEmptyString(s string) *string {
 }
 
 func (i *importer) ensureTerm(ctx context.Context, tx pgx.Tx) (uuid.UUID, error) {
+	if i.termID != uuid.Nil {
+		return i.termID, nil
+	}
+
 	var id uuid.UUID
 	err := tx.QueryRow(ctx, `SELECT id FROM public.academic_term WHERE filial_id = $1 AND name = $2 LIMIT 1`, i.filialID, i.termName).Scan(&id)
 	if err == pgx.ErrNoRows {
@@ -760,7 +766,11 @@ func (i *importer) ensureTerm(ctx context.Context, tx pgx.Tx) (uuid.UUID, error)
 			RETURNING id
 		`, i.filialID, i.termName).Scan(&id)
 	}
-	return id, err
+	if err != nil {
+		return uuid.Nil, err
+	}
+	i.termID = id
+	return id, nil
 }
 
 func (i *importer) ensureGroup(ctx context.Context, tx pgx.Tx, group miitGroup) (uuid.UUID, error) {
