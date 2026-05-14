@@ -87,6 +87,9 @@ func Sync(ctx context.Context, cfg Config) (Stats, error) {
 		return Stats{}, fmt.Errorf("connect postgres: %w", err)
 	}
 	defer db.Close()
+	if err := ensureFilialExistsOrCreate(ctx, db, filialID); err != nil {
+		return Stats{}, err
+	}
 
 	var stats Stats
 	imp := &importer{
@@ -101,9 +104,15 @@ func Sync(ctx context.Context, cfg Config) (Stats, error) {
 	}
 
 	total := len(groups)
+	startedAt := time.Now()
 	for idx, group := range groups {
-		if cfg.Logger != nil && (idx == 0 || (idx+1)%50 == 0 || idx+1 == total) {
-			cfg.Logger.Info("fetching and importing MIIT schedule", zap.Int("current", idx+1), zap.Int("total", total), zap.String("group", group.Name))
+		if cfg.Logger != nil && (idx == 0 || (idx+1)%10 == 0 || idx+1 == total) {
+			cfg.Logger.Info("fetching and importing MIIT schedule",
+				zap.Int("current", idx+1),
+				zap.Int("total", total),
+				zap.String("group", group.Name),
+				zap.Duration("elapsed", time.Since(startedAt)),
+			)
 		}
 
 		// Sync regular schedule (Odd/Even weeks)
@@ -123,6 +132,16 @@ func Sync(ctx context.Context, cfg Config) (Stats, error) {
 			if cfg.Logger != nil {
 				cfg.Logger.Warn("failed to sync MIIT session schedule", zap.String("group", group.Name), zap.Error(err))
 			}
+		}
+		if cfg.Logger != nil && (idx == 0 || (idx+1)%25 == 0 || idx+1 == total) {
+			cfg.Logger.Info("MIIT sync progress",
+				zap.Int("current", idx+1),
+				zap.Int("total", total),
+				zap.Int("events", stats.Events),
+				zap.Int("fetchErrors", stats.FetchErrors),
+				zap.Int("affectedGroups", len(imp.affectedGroups)),
+				zap.Duration("elapsed", time.Since(startedAt)),
+			)
 		}
 	}
 
@@ -695,4 +714,19 @@ func nullIfEmpty(value string) any {
 		return nil
 	}
 	return value
+}
+
+func ensureFilialExistsOrCreate(ctx context.Context, db *pgxpool.Pool, filialID uuid.UUID) error {
+	var exists bool
+	err := db.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM public.filial WHERE id = $1)`, filialID).Scan(&exists)
+	if err != nil {
+		return fmt.Errorf("check filial exists: %w", err)
+	}
+	if exists {
+		return nil
+	}
+	if _, err := db.Exec(ctx, `INSERT INTO public.filial (id) VALUES ($1) ON CONFLICT (id) DO NOTHING`, filialID); err != nil {
+		return fmt.Errorf("create filial: %w", err)
+	}
+	return nil
 }
