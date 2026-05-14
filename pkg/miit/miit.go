@@ -179,13 +179,7 @@ type miitGroup struct {
 }
 
 func FetchGroups(ctx context.Context, client *http.Client, apiBase string) ([]miitGroup, error) {
-	res, err := client.Get(strings.TrimRight(apiBase, "/") + "/timetable")
-	if err != nil {
-		return nil, err
-	}
-	defer res.Body.Close()
-
-	doc, err := goquery.NewDocumentFromReader(res.Body)
+	doc, err := fetchDocument(ctx, client, strings.TrimRight(apiBase, "/")+"/timetable")
 	if err != nil {
 		return nil, err
 	}
@@ -288,143 +282,292 @@ func parseTimetableID(href string) int {
 }
 
 func (i *importer) syncRegularSchedule(ctx context.Context, client *http.Client, apiBase string, group miitGroup, stats *Stats) error {
-	res, err := client.Get(apiBase + group.TimetableLink + "?type=1")
-	if err != nil {
-		return err
-	}
-	defer res.Body.Close()
-
-	doc, err := goquery.NewDocumentFromReader(res.Body)
+	doc, err := fetchDocument(ctx, client, strings.TrimRight(apiBase, "/")+group.TimetableLink+"?type=1")
 	if err != nil {
 		return err
 	}
 
+	var events []regularEvent
 	for week := 1; week <= 2; week++ {
-		for dayIdx := 3; dayIdx <= 15; dayIdx += 2 {
-			dayOfWeek := (dayIdx - 1) / 2
-			for lessonIdx := 2; lessonIdx <= 16; lessonIdx += 2 {
-				lessonNum := lessonIdx / 2
-				lessonName := getLesson(doc, week, lessonIdx, dayIdx)
-				if lessonName == "" {
-					continue
-				}
-				teacherName := getTeacher(doc, week, lessonIdx, dayIdx)
-				roomName := getRoom(doc, week, lessonIdx, dayIdx)
+		events = append(events, parseRegularWeekEvents(doc, week)...)
+	}
 
-				tx, err := i.db.Begin(ctx)
-				if err != nil {
-					return err
-				}
-				err = i.importMiitEvent(ctx, tx, group, lessonName, teacherName, roomName, week, dayOfWeek, lessonNum, nil, false, "", stats)
-				if err != nil {
-					tx.Rollback(ctx)
-					continue
-				}
-				if err := tx.Commit(ctx); err != nil {
-					return err
-				}
-				stats.Events++
-			}
+	if err := i.clearGroupSchedule(ctx, group); err != nil {
+		return err
+	}
+
+	for _, event := range events {
+		tx, err := i.db.Begin(ctx)
+		if err != nil {
+			return err
 		}
+		err = i.importMiitEvent(ctx, tx, group, event.SubjectName, event.TeacherName, event.RoomName, event.Week, event.DayOfWeek, event.LessonNum, nil, false, event.LessonType, event.Comment, stats)
+		if err != nil {
+			tx.Rollback(ctx)
+			continue
+		}
+		if err := tx.Commit(ctx); err != nil {
+			return err
+		}
+		stats.Events++
 	}
 	return nil
 }
 
-func (i *importer) syncSessionSchedule(ctx context.Context, client *http.Client, apiBase string, group miitGroup, stats *Stats) error {
-	res, err := client.Get(apiBase + group.TimetableLink + "?type=2")
+func (i *importer) clearGroupSchedule(ctx context.Context, group miitGroup) error {
+	tx, err := i.db.Begin(ctx)
 	if err != nil {
 		return err
 	}
-	defer res.Body.Close()
+	defer tx.Rollback(ctx)
 
-	doc, err := goquery.NewDocumentFromReader(res.Body)
+	termID, err := i.ensureTerm(ctx, tx)
 	if err != nil {
 		return err
 	}
+	groupID, err := i.ensureGroup(ctx, tx, group)
+	if err != nil {
+		return err
+	}
+	i.affectedGroups[groupID] = struct{}{}
 
-	doc.Find("div.info-block[id]").Each(func(idx int, s *goquery.Selection) {
-		dateStr := cleanText(s.Find("span.info-block__header-text").Text())
-		date, err := parseSessionDate(dateStr)
-		if err != nil {
+	_, err = tx.Exec(ctx, `
+DELETE FROM public.timetable_entry
+WHERE term_id = $1
+  AND group_id = $2
+  AND source = 'miit'
+`, termID, groupID)
+	if err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
+}
+
+type regularEvent struct {
+	SubjectName string
+	TeacherName string
+	RoomName    string
+	LessonType  string
+	Comment     string
+	Week        int
+	DayOfWeek   int
+	LessonNum   int
+}
+
+func parseRegularWeekEvents(doc *goquery.Document, week int) []regularEvent {
+	var events []regularEvent
+	weekPane := doc.Find(fmt.Sprintf("#week-%d", week))
+	weekPane.Find("div.d-none.d-md-block table.timetable__grid tr").Each(func(rowIdx int, row *goquery.Selection) {
+		lessonNum := rowIdx
+		if lessonNum <= 0 {
 			return
 		}
 
-		s.Find("div.info-block__content .row").Each(func(j int, row *goquery.Selection) {
-			timeStr := cleanText(row.Find(".col-md-2").First().Text())
-			typeStr := cleanText(row.Find(".col-md-2").Eq(1).Text())
-			subjectName := cleanText(row.Find(".col-md-4").Text())
-			teacherRoom := cleanText(row.Find(".col-md-3").Text())
+		row.Find("td.timetable__grid-day").Each(func(dayIdx int, cell *goquery.Selection) {
+			dayOfWeek := dayIdx + 1
+			parseRegularCellEvents(cell, week, dayOfWeek, lessonNum, &events)
+		})
+	})
+	return events
+}
 
+func parseRegularCellEvents(cell *goquery.Selection, week, dayOfWeek, lessonNum int, events *[]regularEvent) {
+	cell.Find("div.timetable__grid-day-lesson").Each(func(_ int, lesson *goquery.Selection) {
+		lessonType := cleanText(lesson.Find(".timetable__grid-text_gray").First().Text())
+		subjectName := cleanText(strings.TrimPrefix(cleanText(lesson.Text()), lessonType))
+		if subjectName == "" {
+			return
+		}
+
+		details := lesson.NextUntil("div.timetable__grid-day-lesson")
+		teacherName, extraTeachers := extractTeacherNames(details)
+		roomName := extractRoomNames(details)
+		comment := extractCommunityText(details)
+		if extraTeachers != "" {
+			if comment != "" {
+				comment += "; "
+			}
+			comment += "Преподаватели: " + extraTeachers
+		}
+
+		*events = append(*events, regularEvent{
+			SubjectName: subjectName,
+			TeacherName: teacherName,
+			RoomName:    roomName,
+			LessonType:  lessonType,
+			Comment:     comment,
+			Week:        week,
+			DayOfWeek:   dayOfWeek,
+			LessonNum:   lessonNum,
+		})
+	})
+}
+
+func extractTeacherNames(details *goquery.Selection) (string, string) {
+	var names []string
+	details.Find("a.icon-academic-cap").Each(func(_ int, s *goquery.Selection) {
+		name := cleanText(s.AttrOr("title", ""))
+		if idx := strings.Index(name, ","); idx >= 0 {
+			name = strings.TrimSpace(name[:idx])
+		}
+		if name == "" {
+			name = cleanText(s.Text())
+		}
+		if name != "" {
+			names = append(names, name)
+		}
+	})
+	if len(names) == 0 {
+		return "", ""
+	}
+	if len(names) == 1 {
+		return names[0], ""
+	}
+	return names[0], strings.Join(names, "; ")
+}
+
+func extractRoomNames(details *goquery.Selection) string {
+	var rooms []string
+	details.Find("a.icon-location").Each(func(_ int, s *goquery.Selection) {
+		room := cleanText(s.AttrOr("title", ""))
+		if room == "" {
+			room = cleanText(s.Text())
+		}
+		room = strings.TrimPrefix(room, "Аудитория ")
+		if room != "" {
+			rooms = append(rooms, room)
+		}
+	})
+	return strings.Join(rooms, "; ")
+}
+
+func extractCommunityText(details *goquery.Selection) string {
+	var parts []string
+	details.Find(".icon-community").Each(func(_ int, s *goquery.Selection) {
+		text := cleanText(s.Text())
+		if text != "" {
+			parts = append(parts, text)
+		}
+	})
+	return strings.Join(parts, "; ")
+}
+
+func (i *importer) syncSessionSchedule(ctx context.Context, client *http.Client, apiBase string, group miitGroup, stats *Stats) error {
+	doc, err := fetchDocument(ctx, client, strings.TrimRight(apiBase, "/")+group.TimetableLink+"?type=2")
+	if err != nil {
+		return err
+	}
+
+	for _, event := range parseSessionEvents(doc) {
+		tx, err := i.db.Begin(ctx)
+		if err != nil {
+			return err
+		}
+		err = i.importMiitEvent(ctx, tx, group, event.SubjectName, event.TeacherName, event.RoomName, 0, event.DayOfWeek, 0, &event.OccursOn, true, event.LessonType, event.Comment, stats, event.StartsAt, event.EndsAt)
+		if err != nil {
+			tx.Rollback(ctx)
+			continue
+		}
+		if err := tx.Commit(ctx); err != nil {
+			return err
+		}
+		stats.Events++
+	}
+	return nil
+}
+
+type sessionEvent struct {
+	SubjectName string
+	TeacherName string
+	RoomName    string
+	LessonType  string
+	Comment     string
+	OccursOn    time.Time
+	DayOfWeek   int
+	StartsAt    string
+	EndsAt      string
+}
+
+func parseSessionEvents(doc *goquery.Document) []sessionEvent {
+	var events []sessionEvent
+	doc.Find("div.info-block[data-date]").Each(func(_ int, block *goquery.Selection) {
+		date, err := time.Parse("2006-01-02", block.AttrOr("data-date", ""))
+		if err != nil {
+			return
+		}
+		dayOfWeek := int(date.Weekday())
+		if dayOfWeek == 0 {
+			dayOfWeek = 7
+		}
+
+		block.Find("div.timetable__list-timeslot").Each(func(_ int, slot *goquery.Selection) {
+			startsAt, endsAt := parseTimeRange(cleanText(slot.Find("div.mb-1").First().Text()))
+			body := slot.Find("div.pl-4").First()
+			lessonType := cleanText(body.Find("span.timetable__grid-text_gray").First().Text())
+			subjectName := cleanText(strings.TrimPrefix(cleanText(body.Clone().Children().Remove().End().Text()), lessonType))
+			if subjectName == "" {
+				subjectName = cleanText(strings.TrimPrefix(cleanText(body.Text()), lessonType))
+			}
 			if subjectName == "" {
 				return
 			}
 
-			teacherName, roomName := splitTeacherRoom(teacherRoom)
-
-			tx, err := i.db.Begin(ctx)
-			if err != nil {
-				return
+			details := body.Find("div.timetable__grid-about").First()
+			teacherName, extraTeachers := extractTeacherNames(details)
+			roomName := extractRoomNames(details)
+			comment := ""
+			if extraTeachers != "" {
+				comment = "Преподаватели: " + extraTeachers
 			}
 
-			dayOfWeek := int(date.Weekday())
-			if dayOfWeek == 0 {
-				dayOfWeek = 7
-			}
-			err = i.importMiitEvent(ctx, tx, group, subjectName, teacherName, roomName, 0, dayOfWeek, 0, &date, true, typeStr, stats, timeStr)
-			if err != nil {
-				tx.Rollback(ctx)
-				return
-			}
-			if err := tx.Commit(ctx); err != nil {
-				return
-			}
-			stats.Events++
+			events = append(events, sessionEvent{
+				SubjectName: subjectName,
+				TeacherName: teacherName,
+				RoomName:    roomName,
+				LessonType:  lessonType,
+				Comment:     comment,
+				OccursOn:    date,
+				DayOfWeek:   dayOfWeek,
+				StartsAt:    startsAt,
+				EndsAt:      endsAt,
+			})
 		})
 	})
-
-	return nil
+	return events
 }
 
-func parseSessionDate(s string) (time.Time, error) {
-	// Example: "15 мая 2026, Пятница"
-	parts := strings.Split(s, ",")
+func parseTimeRange(value string) (string, string) {
+	value = strings.ReplaceAll(value, "—", "-")
+	parts := strings.Split(value, "-")
 	if len(parts) == 0 {
-		return time.Time{}, fmt.Errorf("invalid date format")
+		return "", ""
 	}
-	datePart := strings.TrimSpace(parts[0])
-
-	months := map[string]string{
-		"января": "01", "февраля": "02", "марта": "03", "апреля": "04",
-		"мая": "05", "июня": "06", "июля": "07", "августа": "08",
-		"сентября": "09", "октября": "10", "ноября": "11", "декабря": "12",
+	startsAt := strings.TrimSpace(parts[0])
+	endsAt := ""
+	if len(parts) > 1 {
+		endsAt = strings.TrimSpace(parts[1])
 	}
-
-	fields := strings.Fields(datePart)
-	if len(fields) < 3 {
-		return time.Time{}, fmt.Errorf("invalid date parts")
-	}
-
-	day := fields[0]
-	if len(day) == 1 {
-		day = "0" + day
-	}
-	month := months[strings.ToLower(fields[1])]
-	year := fields[2]
-
-	return time.Parse("2006-01-02", fmt.Sprintf("%s-%s-%s", year, month, day))
+	return startsAt, endsAt
 }
 
-func splitTeacherRoom(s string) (string, string) {
-	// Example: "Иванов И.И. (ауд. 123)"
-	if idx := strings.Index(s, "("); idx != -1 {
-		teacher := strings.TrimSpace(s[:idx])
-		room := strings.TrimSpace(s[idx:])
-		room = strings.TrimPrefix(room, "(")
-		room = strings.TrimSuffix(room, ")")
-		room = strings.TrimPrefix(room, "ауд.")
-		return teacher, strings.TrimSpace(room)
+func fetchDocument(ctx context.Context, client *http.Client, rawURL string) (*goquery.Document, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, rawURL, nil)
+	if err != nil {
+		return nil, err
 	}
-	return s, ""
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36")
+	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+	req.Header.Set("Accept-Language", "ru-RU,ru;q=0.9,en;q=0.8")
+
+	res, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+	if res.StatusCode < 200 || res.StatusCode >= 300 {
+		return nil, fmt.Errorf("GET %s: status %s", rawURL, res.Status)
+	}
+	return goquery.NewDocumentFromReader(res.Body)
 }
 
 func (c Config) withDefaults() Config {
@@ -445,13 +588,7 @@ func (c Config) withDefaults() Config {
 
 func findTimetableLink(ctx context.Context, client *http.Client, apiBase, groupName, institute string) (string, error) {
 	searchURL := fmt.Sprintf("%s/timetable?query=%s", apiBase, url.QueryEscape(groupName))
-	res, err := client.Get(searchURL)
-	if err != nil {
-		return "", err
-	}
-	defer res.Body.Close()
-
-	doc, err := goquery.NewDocumentFromReader(res.Body)
+	doc, err := fetchDocument(ctx, client, searchURL)
 	if err != nil {
 		return "", err
 	}
@@ -473,21 +610,6 @@ func findTimetableLink(ctx context.Context, client *http.Client, apiBase, groupN
 	return link, nil
 }
 
-func getLesson(doc *goquery.Document, week, lessonIdx, dayIdx int) string {
-	selector := fmt.Sprintf("#week-%d div.d-none.d-md-block table tbody tr:nth-child(%d) td:nth-child(%d) div.timetable__grid-day-lesson", week, lessonIdx, dayIdx)
-	return cleanText(doc.Find(selector).Text())
-}
-
-func getTeacher(doc *goquery.Document, week, lessonIdx, dayIdx int) string {
-	selector := fmt.Sprintf("#week-%d div.d-none.d-md-block table tbody tr:nth-child(%d) td:nth-child(%d) div:nth-child(3)", week, lessonIdx, dayIdx)
-	return cleanText(doc.Find(selector).Text())
-}
-
-func getRoom(doc *goquery.Document, week, lessonIdx, dayIdx int) string {
-	selector := fmt.Sprintf("#week-%d div.d-none.d-md-block table tbody tr:nth-child(%d) td:nth-child(%d) div:nth-child(5)", week, lessonIdx, dayIdx)
-	return cleanText(doc.Find(selector).Text())
-}
-
 func cleanText(text string) string {
 	text = strings.ReplaceAll(text, "\n", " ")
 	text = strings.Join(strings.Fields(text), " ")
@@ -505,7 +627,7 @@ type importer struct {
 	affectedGroups map[uuid.UUID]struct{}
 }
 
-func (i *importer) importMiitEvent(ctx context.Context, tx pgx.Tx, group miitGroup, lessonName, teacherName, roomName string, week, dayOfWeek, lessonNum int, occursOn *time.Time, isExam bool, lessonType string, stats *Stats, customTime ...string) error {
+func (i *importer) importMiitEvent(ctx context.Context, tx pgx.Tx, group miitGroup, lessonName, teacherName, roomName string, week, dayOfWeek, lessonNum int, occursOn *time.Time, isExam bool, lessonType, comment string, stats *Stats, customTime ...string) error {
 	termID, err := i.ensureTerm(ctx, tx)
 	if err != nil {
 		return err
@@ -545,6 +667,9 @@ func (i *importer) importMiitEvent(ctx context.Context, tx pgx.Tx, group miitGro
 		startsAt, endsAt = lessonTime(lessonNum)
 	} else if len(customTime) > 0 && customTime[0] != "" {
 		startsAt = customTime[0]
+		if len(customTime) > 1 {
+			endsAt = customTime[1]
+		}
 	}
 
 	weekType := "ALL"
@@ -554,16 +679,16 @@ func (i *importer) importMiitEvent(ctx context.Context, tx pgx.Tx, group miitGro
 		weekType = "EVEN"
 	}
 
-	sourceEventID := sourceEventIDInt64(group.Name, week, dayOfWeek, lessonNum, lessonName, occursOn, isExam)
+	sourceEventID := sourceEventIDInt64(group.Name, week, dayOfWeek, lessonNum, lessonName, teacherName, roomName, lessonType, comment, startsAt, endsAt, occursOn, isExam)
 	if isExam {
 		weekType = "ONCE"
 	}
 
 	_, err = tx.Exec(ctx, `
 		INSERT INTO public.timetable_entry (
-			term_id, group_id, subject_id, teacher_id, classroom_id, day_of_week, week_type, occurs_on, starts_at, ends_at, source, source_event_id, is_exam, lesson_type, updated_at
+			term_id, group_id, subject_id, teacher_id, classroom_id, day_of_week, week_type, occurs_on, starts_at, ends_at, source, source_event_id, is_exam, lesson_type, comment, updated_at
 		) VALUES (
-			$1, $2, $3, $4, $5, $6, $7, $8, $9::time, $10::time, 'miit', $11, $12, $13, now()
+			$1, $2, $3, $4, $5, $6, $7, $8, $9::time, $10::time, 'miit', $11, $12, $13, $14, now()
 		)
 		ON CONFLICT ON CONSTRAINT timetable_entry_source_event_unique DO UPDATE SET
 			subject_id = EXCLUDED.subject_id,
@@ -576,18 +701,19 @@ func (i *importer) importMiitEvent(ctx context.Context, tx pgx.Tx, group miitGro
 			ends_at = EXCLUDED.ends_at,
 			is_exam = EXCLUDED.is_exam,
 			lesson_type = EXCLUDED.lesson_type,
+			comment = EXCLUDED.comment,
 			updated_at = now()
-	`, termID, groupID, subjectID, teacherID, roomID, dayOfWeek, weekType, occursOn, nullIfEmptyString(startsAt), nullIfEmptyString(endsAt), sourceEventID, isExam, nullIfEmptyString(lessonType))
+	`, termID, groupID, subjectID, teacherID, roomID, dayOfWeek, weekType, occursOn, nullIfEmptyString(startsAt), nullIfEmptyString(endsAt), sourceEventID, isExam, nullIfEmptyString(lessonType), nullIfEmptyString(comment))
 
 	return err
 }
 
-func sourceEventIDInt64(groupName string, week, dayOfWeek, lessonNum int, lessonName string, occursOn *time.Time, isExam bool) int64 {
+func sourceEventIDInt64(groupName string, week, dayOfWeek, lessonNum int, lessonName, teacherName, roomName, lessonType, comment, startsAt, endsAt string, occursOn *time.Time, isExam bool) int64 {
 	var key string
 	if isExam && occursOn != nil {
-		key = fmt.Sprintf("miit-exam|%s|%s|%s", groupName, occursOn.Format("2006-01-02"), lessonName)
+		key = fmt.Sprintf("miit-exam|%s|%s|%s|%s|%s|%s|%s|%s", groupName, occursOn.Format("2006-01-02"), startsAt, endsAt, lessonName, teacherName, roomName, lessonType)
 	} else {
-		key = fmt.Sprintf("miit-regular|%s|%d|%d|%d|%s", groupName, week, dayOfWeek, lessonNum, lessonName)
+		key = fmt.Sprintf("miit-regular|%s|%d|%d|%d|%s|%s|%s|%s|%s", groupName, week, dayOfWeek, lessonNum, lessonName, teacherName, roomName, lessonType, comment)
 	}
 	h := fnv.New64a()
 	_, _ = h.Write([]byte(key))
@@ -618,6 +744,7 @@ func (i *importer) ensureGroup(ctx context.Context, tx pgx.Tx, group miitGroup) 
 	if id, ok := i.groups[group.Name]; ok {
 		return id, nil
 	}
+	courseName := miitCourseName(group.Course)
 	var id uuid.UUID
 	err := tx.QueryRow(ctx, `
 SELECT id
@@ -634,7 +761,7 @@ INSERT INTO public.edu_group (
 ) VALUES (
 	$1, $2, 'miit', NULLIF($3, 0), NULLIF($4, ''), NULLIF($5, 0), NULLIF($6, ''), NULL, false
 ) RETURNING id
-`, i.filialID, group.Name, group.SourceGroupID, group.InstituteName, group.Course, strconv.Itoa(group.Course)).Scan(&id)
+`, i.filialID, group.Name, group.SourceGroupID, group.InstituteName, group.Course, courseName).Scan(&id)
 		} else if err == nil {
 			_, err = tx.Exec(ctx, `
 UPDATE public.edu_group
@@ -647,7 +774,7 @@ SET source = 'miit',
     is_magistracy = false,
     updated_at = now()
 WHERE id = $1
-`, id, group.SourceGroupID, group.InstituteName, group.Course, strconv.Itoa(group.Course))
+`, id, group.SourceGroupID, group.InstituteName, group.Course, courseName)
 		}
 	} else if err == nil {
 		_, err = tx.Exec(ctx, `
@@ -660,13 +787,20 @@ SET name = $2,
     is_magistracy = false,
     updated_at = now()
 WHERE id = $1
-`, id, group.Name, group.InstituteName, group.Course, strconv.Itoa(group.Course))
+`, id, group.Name, group.InstituteName, group.Course, courseName)
 	}
 	if err != nil {
 		return uuid.Nil, err
 	}
 	i.groups[group.Name] = id
 	return id, nil
+}
+
+func miitCourseName(course int) string {
+	if course <= 0 {
+		return ""
+	}
+	return strconv.Itoa(course)
 }
 
 func (i *importer) ensureSubject(ctx context.Context, tx pgx.Tx, name string) (uuid.UUID, error) {
