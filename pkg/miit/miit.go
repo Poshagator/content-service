@@ -6,6 +6,7 @@ import (
 	"hash/fnv"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -106,6 +107,7 @@ func Sync(ctx context.Context, cfg Config) (Stats, error) {
 	total := len(groups)
 	startedAt := time.Now()
 	for idx, group := range groups {
+		groupStartedAt := time.Now()
 		if cfg.Logger != nil && (idx == 0 || (idx+1)%10 == 0 || idx+1 == total) {
 			cfg.Logger.Info("fetching and importing MIIT schedule",
 				zap.Int("current", idx+1),
@@ -120,7 +122,11 @@ func Sync(ctx context.Context, cfg Config) (Stats, error) {
 		if err != nil {
 			stats.FetchErrors++
 			if cfg.Logger != nil {
-				cfg.Logger.Warn("failed to sync MIIT regular schedule", zap.String("group", group.Name), zap.Error(err))
+				cfg.Logger.Warn("failed to sync MIIT regular schedule",
+					zap.String("group", group.Name),
+					zap.Error(err),
+					zap.Duration("groupElapsed", time.Since(groupStartedAt)),
+				)
 			}
 		} else {
 			stats.Schedules++
@@ -130,8 +136,22 @@ func Sync(ctx context.Context, cfg Config) (Stats, error) {
 		err = imp.syncSessionSchedule(ctx, client, cfg.APIBase, group, &stats)
 		if err != nil {
 			if cfg.Logger != nil {
-				cfg.Logger.Warn("failed to sync MIIT session schedule", zap.String("group", group.Name), zap.Error(err))
+				cfg.Logger.Warn("failed to sync MIIT session schedule",
+					zap.String("group", group.Name),
+					zap.Error(err),
+					zap.Duration("groupElapsed", time.Since(groupStartedAt)),
+				)
 			}
+		}
+		if cfg.Logger != nil {
+			cfg.Logger.Info("MIIT group processed",
+				zap.Int("current", idx+1),
+				zap.Int("total", total),
+				zap.String("group", group.Name),
+				zap.Duration("groupElapsed", time.Since(groupStartedAt)),
+				zap.Int("eventsTotal", stats.Events),
+				zap.Int("fetchErrorsTotal", stats.FetchErrors),
+			)
 		}
 		if cfg.Logger != nil && (idx == 0 || (idx+1)%25 == 0 || idx+1 == total) {
 			cfg.Logger.Info("MIIT sync progress",
@@ -152,6 +172,7 @@ func Sync(ctx context.Context, cfg Config) (Stats, error) {
 type miitGroup struct {
 	Name          string
 	TimetableLink string
+	SourceGroupID int
 	InstituteName string
 	InstituteID   string
 	Course        int
@@ -170,6 +191,19 @@ func FetchGroups(ctx context.Context, client *http.Client, apiBase string) ([]mi
 	}
 
 	var groups []miitGroup
+	seen := make(map[string]struct{})
+	addGroup := func(g miitGroup) {
+		key := strings.TrimSpace(g.TimetableLink)
+		if key == "" {
+			// Fallback key for malformed rows without link.
+			key = "name:" + strings.TrimSpace(g.Name)
+		}
+		if _, ok := seen[key]; ok {
+			return
+		}
+		seen[key] = struct{}{}
+		groups = append(groups, g)
+	}
 	doc.Find("div.info-block[id]").Each(func(i int, s *goquery.Selection) {
 		instituteID, _ := s.Attr("id")
 		instituteName := cleanText(s.Find("span.info-block__header-text").Text())
@@ -184,9 +218,10 @@ func FetchGroups(ctx context.Context, client *http.Client, apiBase string) ([]mi
 					href, _ := a.Attr("href")
 					name := cleanText(a.Text())
 					if href != "" && name != "" {
-						groups = append(groups, miitGroup{
+						addGroup(miitGroup{
 							Name:          name,
 							TimetableLink: href,
+							SourceGroupID: parseTimetableID(href),
 							InstituteName: instituteName,
 							InstituteID:   instituteID,
 							Course:        course,
@@ -199,9 +234,10 @@ func FetchGroups(ctx context.Context, client *http.Client, apiBase string) ([]mi
 					href, _ := a.Attr("href")
 					name := cleanText(a.Text())
 					if href != "" && name != "" {
-						groups = append(groups, miitGroup{
+						addGroup(miitGroup{
 							Name:          name,
 							TimetableLink: href,
+							SourceGroupID: parseTimetableID(href),
 							InstituteName: instituteName,
 							InstituteID:   instituteID,
 							Course:        course,
@@ -238,6 +274,19 @@ func parseCourse(s string) int {
 	return 0
 }
 
+func parseTimetableID(href string) int {
+	href = strings.TrimSpace(href)
+	if href == "" {
+		return 0
+	}
+	parts := strings.Split(strings.Trim(href, "/"), "/")
+	if len(parts) == 0 {
+		return 0
+	}
+	id, _ := strconv.Atoi(parts[len(parts)-1])
+	return id
+}
+
 func (i *importer) syncRegularSchedule(ctx context.Context, client *http.Client, apiBase string, group miitGroup, stats *Stats) error {
 	res, err := client.Get(apiBase + group.TimetableLink + "?type=1")
 	if err != nil {
@@ -266,7 +315,7 @@ func (i *importer) syncRegularSchedule(ctx context.Context, client *http.Client,
 				if err != nil {
 					return err
 				}
-				err = i.importMiitEvent(ctx, tx, group.Name, lessonName, teacherName, roomName, week, dayOfWeek, lessonNum, nil, false, "", stats)
+				err = i.importMiitEvent(ctx, tx, group, lessonName, teacherName, roomName, week, dayOfWeek, lessonNum, nil, false, "", stats)
 				if err != nil {
 					tx.Rollback(ctx)
 					continue
@@ -321,7 +370,7 @@ func (i *importer) syncSessionSchedule(ctx context.Context, client *http.Client,
 			if dayOfWeek == 0 {
 				dayOfWeek = 7
 			}
-			err = i.importMiitEvent(ctx, tx, group.Name, subjectName, teacherName, roomName, 0, dayOfWeek, 0, &date, true, typeStr, stats, timeStr)
+			err = i.importMiitEvent(ctx, tx, group, subjectName, teacherName, roomName, 0, dayOfWeek, 0, &date, true, typeStr, stats, timeStr)
 			if err != nil {
 				tx.Rollback(ctx)
 				return
@@ -456,13 +505,13 @@ type importer struct {
 	affectedGroups map[uuid.UUID]struct{}
 }
 
-func (i *importer) importMiitEvent(ctx context.Context, tx pgx.Tx, groupName, lessonName, teacherName, roomName string, week, dayOfWeek, lessonNum int, occursOn *time.Time, isExam bool, lessonType string, stats *Stats, customTime ...string) error {
+func (i *importer) importMiitEvent(ctx context.Context, tx pgx.Tx, group miitGroup, lessonName, teacherName, roomName string, week, dayOfWeek, lessonNum int, occursOn *time.Time, isExam bool, lessonType string, stats *Stats, customTime ...string) error {
 	termID, err := i.ensureTerm(ctx, tx)
 	if err != nil {
 		return err
 	}
 
-	groupID, err := i.ensureGroup(ctx, tx, groupName)
+	groupID, err := i.ensureGroup(ctx, tx, group)
 	if err != nil {
 		return err
 	}
@@ -505,7 +554,7 @@ func (i *importer) importMiitEvent(ctx context.Context, tx pgx.Tx, groupName, le
 		weekType = "EVEN"
 	}
 
-	sourceEventID := sourceEventIDInt64(groupName, week, dayOfWeek, lessonNum, lessonName, occursOn, isExam)
+	sourceEventID := sourceEventIDInt64(group.Name, week, dayOfWeek, lessonNum, lessonName, occursOn, isExam)
 	if isExam {
 		weekType = "ONCE"
 	}
@@ -565,19 +614,58 @@ func (i *importer) ensureTerm(ctx context.Context, tx pgx.Tx) (uuid.UUID, error)
 	return id, err
 }
 
-func (i *importer) ensureGroup(ctx context.Context, tx pgx.Tx, name string) (uuid.UUID, error) {
-	if id, ok := i.groups[name]; ok {
+func (i *importer) ensureGroup(ctx context.Context, tx pgx.Tx, group miitGroup) (uuid.UUID, error) {
+	if id, ok := i.groups[group.Name]; ok {
 		return id, nil
 	}
 	var id uuid.UUID
-	err := tx.QueryRow(ctx, `SELECT id FROM public.edu_group WHERE filial_id = $1 AND name = $2 LIMIT 1`, i.filialID, name).Scan(&id)
+	err := tx.QueryRow(ctx, `
+SELECT id
+FROM public.edu_group
+WHERE filial_id = $1 AND source = 'miit' AND source_group_id = NULLIF($2, 0)
+LIMIT 1
+`, i.filialID, group.SourceGroupID).Scan(&id)
 	if err == pgx.ErrNoRows {
-		err = tx.QueryRow(ctx, `INSERT INTO public.edu_group (filial_id, name, source) VALUES ($1, $2, 'miit') RETURNING id`, i.filialID, name).Scan(&id)
+		err = tx.QueryRow(ctx, `SELECT id FROM public.edu_group WHERE filial_id = $1 AND name = $2 LIMIT 1`, i.filialID, group.Name).Scan(&id)
+		if err == pgx.ErrNoRows {
+			err = tx.QueryRow(ctx, `
+INSERT INTO public.edu_group (
+	filial_id, name, source, source_group_id, faculty_name, course_id, course_name, education_level, is_magistracy
+) VALUES (
+	$1, $2, 'miit', NULLIF($3, 0), NULLIF($4, ''), NULLIF($5, 0), NULLIF($6, ''), NULL, false
+) RETURNING id
+`, i.filialID, group.Name, group.SourceGroupID, group.InstituteName, group.Course, strconv.Itoa(group.Course)).Scan(&id)
+		} else if err == nil {
+			_, err = tx.Exec(ctx, `
+UPDATE public.edu_group
+SET source = 'miit',
+    source_group_id = NULLIF($2, 0),
+    faculty_name = NULLIF($3, ''),
+    course_id = NULLIF($4, 0),
+    course_name = NULLIF($5, ''),
+    education_level = NULL,
+    is_magistracy = false,
+    updated_at = now()
+WHERE id = $1
+`, id, group.SourceGroupID, group.InstituteName, group.Course, strconv.Itoa(group.Course))
+		}
+	} else if err == nil {
+		_, err = tx.Exec(ctx, `
+UPDATE public.edu_group
+SET name = $2,
+    faculty_name = NULLIF($3, ''),
+    course_id = NULLIF($4, 0),
+    course_name = NULLIF($5, ''),
+    education_level = NULL,
+    is_magistracy = false,
+    updated_at = now()
+WHERE id = $1
+`, id, group.Name, group.InstituteName, group.Course, strconv.Itoa(group.Course))
 	}
 	if err != nil {
 		return uuid.Nil, err
 	}
-	i.groups[name] = id
+	i.groups[group.Name] = id
 	return id, nil
 }
 
