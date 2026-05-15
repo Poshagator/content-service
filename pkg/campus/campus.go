@@ -62,6 +62,11 @@ type campusEntity struct {
 	} `json:"extra"`
 }
 
+type v4Response struct {
+	Items      []campusEntity `json:"items"`
+	TotalCount int            `json:"totalCount"`
+}
+
 type nativeScheduleResponse struct {
 	Entity campusEntity `json:"entity"`
 	Days   []nativeDay  `json:"days"`
@@ -380,12 +385,47 @@ func employeesToSources(employees []kfuEmployee) []scheduleSource {
 }
 
 func fetchCampusEntities(ctx context.Context, client *http.Client, apiBase, organization, entityType string) ([]campusEntity, error) {
-	rawURL := fmt.Sprintf("%s/organizations/%s/entities?type=%s", strings.TrimRight(apiBase, "/"), url.PathEscape(organization), url.QueryEscape(entityType))
-	var entities []campusEntity
-	if err := getJSON(ctx, client, rawURL, &entities); err != nil {
-		return nil, fmt.Errorf("fetch Campus %s: %w", entityType, err)
+	// Try fetching with pagination support
+	offset := 0
+	limit := 100
+	var allEntities []campusEntity
+
+	for {
+		rawURL := fmt.Sprintf("%s/organizations/%s/entities?type=%s&offset=%d&limit=%d",
+			strings.TrimRight(apiBase, "/"),
+			url.PathEscape(organization),
+			url.QueryEscape(entityType),
+			offset,
+			limit,
+		)
+
+		var res interface{}
+		if err := getJSON(ctx, client, rawURL, &res); err != nil {
+			return nil, fmt.Errorf("fetch Campus %s at offset %d: %w", entityType, offset, err)
+		}
+
+		// Handle both array and object responses
+		switch v := res.(type) {
+		case []interface{}:
+			// Traditional V3 array response
+			var batch []campusEntity
+			b, _ := json.Marshal(v)
+			json.Unmarshal(b, &batch)
+			return batch, nil // V3 usually isn't paginated or we just get all
+		case map[string]interface{}:
+			// V4 paginated response
+			var v4 v4Response
+			b, _ := json.Marshal(v)
+			json.Unmarshal(b, &v4)
+			allEntities = append(allEntities, v4.Items...)
+			if len(allEntities) >= v4.TotalCount || len(v4.Items) == 0 {
+				return allEntities, nil
+			}
+			offset += limit
+		default:
+			return nil, fmt.Errorf("unexpected response type for %s entities", entityType)
+		}
 	}
-	return entities, nil
 }
 
 func searchEmployees(ctx context.Context, client *http.Client, apiBase, query string) ([]kfuEmployee, error) {
