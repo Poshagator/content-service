@@ -1,0 +1,51 @@
+syntax = "proto3";
+
+package product;
+
+option go_package = "github.com/poshagator/content-service/pkg/proto/product/gen;product";
+
+service ProductService {
+  rpc SyncProducts(SyncProductsRequest) returns (SyncProductsResponse);
+}
+
+enum SyncMode {
+  SYNC_MODE_UNSPECIFIED = 0;
+  SYNC_MODE_UPSERT_ONLY = 1;
+  SYNC_MODE_REPLACE_SOURCE = 2;
+}
+
+message SyncProductsRequest {
+  string filial_id = 1;
+  string external_filial_id = 2;
+  string source = 3;
+  SyncMode mode = 4;
+  repeated ProductCategoryInput categories = 5;
+  string payload_json = 6;
+}
+
+message ProductCategoryInput {
+  string external_id = 1;
+  string name = 2;
+  string photo_url = 3;
+  string type = 4;
+  repeated ProductInput products = 5;
+}
+
+message ProductInput {
+  string external_id = 1;
+  string title = 2;
+  string body = 3;
+  double base_price = 4;
+  string currency = 5;
+  string weight = 6;
+  bool status = 7;
+  repeated string media_urls = 8;
+}
+
+message SyncProductsResponse {
+  bool success = 1;
+  string message = 2;
+  int64 categories_upserted = 3;
+  int64 products_upserted = 4;
+  int64 products_disabled = 5;
+}

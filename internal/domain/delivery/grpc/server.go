@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 
+	grpcProduct "github.com/poshagator/content-service/internal/domain/delivery/grpc/product"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -13,6 +14,7 @@ import (
 	"github.com/poshagator/content-service/internal/domain/delivery/grpc/schedule"
 	"github.com/poshagator/content-service/internal/domain/usecase/edu"
 	"github.com/poshagator/content-service/internal/domain/usecase/product"
+	pkgProduct "github.com/poshagator/content-service/pkg/proto/product/gen"
 	pkgSchedule "github.com/poshagator/content-service/pkg/proto/schedule/gen"
 )
 
@@ -23,6 +25,7 @@ type Server struct {
 	productUsecase  *product.Usecase
 	eduUsecase      *edu.Usecase
 	scheduleHandler *schedule.Handler
+	productHandler  *grpcProduct.Handler
 }
 
 func NewServer(
@@ -31,6 +34,7 @@ func NewServer(
 	pu *product.Usecase,
 	eu *edu.Usecase,
 	sh *schedule.Handler,
+	ph *grpcProduct.Handler,
 ) (*Server, error) {
 	s := &Server{
 		logger:          logger,
@@ -39,9 +43,11 @@ func NewServer(
 		productUsecase:  pu,
 		eduUsecase:      eu,
 		scheduleHandler: sh,
+		productHandler:  ph,
 	}
 
 	pkgSchedule.RegisterScheduleServiceServer(s.RPC, s.scheduleHandler)
+	pkgProduct.RegisterProductServiceServer(s.RPC, s.productHandler)
 
 	return s, nil
 }
