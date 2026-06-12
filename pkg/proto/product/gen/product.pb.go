@@ -406,6 +406,334 @@ func (x *SyncProductsResponse) GetProductsDisabled() int64 {
 	return 0
 }
 
+type FuelInput struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Price         float64                `protobuf:"fixed64,2,opt,name=price,proto3" json:"price,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *FuelInput) Reset() {
+	*x = FuelInput{}
+	mi := &file_pkg_proto_product_product_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *FuelInput) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FuelInput) ProtoMessage() {}
+
+func (x *FuelInput) ProtoReflect() protoreflect.Message {
+	mi := &file_pkg_proto_product_product_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FuelInput.ProtoReflect.Descriptor instead.
+func (*FuelInput) Descriptor() ([]byte, []int) {
+	return file_pkg_proto_product_product_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *FuelInput) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *FuelInput) GetPrice() float64 {
+	if x != nil {
+		return x.Price
+	}
+	return 0
+}
+
+type SyncFuelsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	FilialId      string                 `protobuf:"bytes,1,opt,name=filial_id,json=filialId,proto3" json:"filial_id,omitempty"`
+	Fuels         []*FuelInput           `protobuf:"bytes,2,rep,name=fuels,proto3" json:"fuels,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SyncFuelsRequest) Reset() {
+	*x = SyncFuelsRequest{}
+	mi := &file_pkg_proto_product_product_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SyncFuelsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SyncFuelsRequest) ProtoMessage() {}
+
+func (x *SyncFuelsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_pkg_proto_product_product_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SyncFuelsRequest.ProtoReflect.Descriptor instead.
+func (*SyncFuelsRequest) Descriptor() ([]byte, []int) {
+	return file_pkg_proto_product_product_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *SyncFuelsRequest) GetFilialId() string {
+	if x != nil {
+		return x.FilialId
+	}
+	return ""
+}
+
+func (x *SyncFuelsRequest) GetFuels() []*FuelInput {
+	if x != nil {
+		return x.Fuels
+	}
+	return nil
+}
+
+type SyncFuelsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
+	FuelsUpserted int64                  `protobuf:"varint,3,opt,name=fuels_upserted,json=fuelsUpserted,proto3" json:"fuels_upserted,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SyncFuelsResponse) Reset() {
+	*x = SyncFuelsResponse{}
+	mi := &file_pkg_proto_product_product_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SyncFuelsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SyncFuelsResponse) ProtoMessage() {}
+
+func (x *SyncFuelsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_pkg_proto_product_product_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SyncFuelsResponse.ProtoReflect.Descriptor instead.
+func (*SyncFuelsResponse) Descriptor() ([]byte, []int) {
+	return file_pkg_proto_product_product_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *SyncFuelsResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+func (x *SyncFuelsResponse) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+func (x *SyncFuelsResponse) GetFuelsUpserted() int64 {
+	if x != nil {
+		return x.FuelsUpserted
+	}
+	return 0
+}
+
+type ExternalActionInput struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Title         string                 `protobuf:"bytes,1,opt,name=title,proto3" json:"title,omitempty"`
+	Url           string                 `protobuf:"bytes,2,opt,name=url,proto3" json:"url,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ExternalActionInput) Reset() {
+	*x = ExternalActionInput{}
+	mi := &file_pkg_proto_product_product_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ExternalActionInput) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExternalActionInput) ProtoMessage() {}
+
+func (x *ExternalActionInput) ProtoReflect() protoreflect.Message {
+	mi := &file_pkg_proto_product_product_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExternalActionInput.ProtoReflect.Descriptor instead.
+func (*ExternalActionInput) Descriptor() ([]byte, []int) {
+	return file_pkg_proto_product_product_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *ExternalActionInput) GetTitle() string {
+	if x != nil {
+		return x.Title
+	}
+	return ""
+}
+
+func (x *ExternalActionInput) GetUrl() string {
+	if x != nil {
+		return x.Url
+	}
+	return ""
+}
+
+type SyncExternalActionsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	FilialId      string                 `protobuf:"bytes,1,opt,name=filial_id,json=filialId,proto3" json:"filial_id,omitempty"`
+	Actions       []*ExternalActionInput `protobuf:"bytes,2,rep,name=actions,proto3" json:"actions,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SyncExternalActionsRequest) Reset() {
+	*x = SyncExternalActionsRequest{}
+	mi := &file_pkg_proto_product_product_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SyncExternalActionsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SyncExternalActionsRequest) ProtoMessage() {}
+
+func (x *SyncExternalActionsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_pkg_proto_product_product_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SyncExternalActionsRequest.ProtoReflect.Descriptor instead.
+func (*SyncExternalActionsRequest) Descriptor() ([]byte, []int) {
+	return file_pkg_proto_product_product_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *SyncExternalActionsRequest) GetFilialId() string {
+	if x != nil {
+		return x.FilialId
+	}
+	return ""
+}
+
+func (x *SyncExternalActionsRequest) GetActions() []*ExternalActionInput {
+	if x != nil {
+		return x.Actions
+	}
+	return nil
+}
+
+type SyncExternalActionsResponse struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Success         bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	Message         string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
+	ActionsUpserted int64                  `protobuf:"varint,3,opt,name=actions_upserted,json=actionsUpserted,proto3" json:"actions_upserted,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *SyncExternalActionsResponse) Reset() {
+	*x = SyncExternalActionsResponse{}
+	mi := &file_pkg_proto_product_product_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SyncExternalActionsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SyncExternalActionsResponse) ProtoMessage() {}
+
+func (x *SyncExternalActionsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_pkg_proto_product_product_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SyncExternalActionsResponse.ProtoReflect.Descriptor instead.
+func (*SyncExternalActionsResponse) Descriptor() ([]byte, []int) {
+	return file_pkg_proto_product_product_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *SyncExternalActionsResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+func (x *SyncExternalActionsResponse) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+func (x *SyncExternalActionsResponse) GetActionsUpserted() int64 {
+	if x != nil {
+		return x.ActionsUpserted
+	}
+	return 0
+}
+
 var File_pkg_proto_product_product_proto protoreflect.FileDescriptor
 
 const file_pkg_proto_product_product_proto_rawDesc = "" +
@@ -444,13 +772,35 @@ const file_pkg_proto_product_product_proto_rawDesc = "" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x12/\n" +
 	"\x13categories_upserted\x18\x03 \x01(\x03R\x12categoriesUpserted\x12+\n" +
 	"\x11products_upserted\x18\x04 \x01(\x03R\x10productsUpserted\x12+\n" +
-	"\x11products_disabled\x18\x05 \x01(\x03R\x10productsDisabled*^\n" +
+	"\x11products_disabled\x18\x05 \x01(\x03R\x10productsDisabled\"5\n" +
+	"\tFuelInput\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
+	"\x05price\x18\x02 \x01(\x01R\x05price\"Y\n" +
+	"\x10SyncFuelsRequest\x12\x1b\n" +
+	"\tfilial_id\x18\x01 \x01(\tR\bfilialId\x12(\n" +
+	"\x05fuels\x18\x02 \x03(\v2\x12.product.FuelInputR\x05fuels\"n\n" +
+	"\x11SyncFuelsResponse\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\x12%\n" +
+	"\x0efuels_upserted\x18\x03 \x01(\x03R\rfuelsUpserted\"=\n" +
+	"\x13ExternalActionInput\x12\x14\n" +
+	"\x05title\x18\x01 \x01(\tR\x05title\x12\x10\n" +
+	"\x03url\x18\x02 \x01(\tR\x03url\"q\n" +
+	"\x1aSyncExternalActionsRequest\x12\x1b\n" +
+	"\tfilial_id\x18\x01 \x01(\tR\bfilialId\x126\n" +
+	"\aactions\x18\x02 \x03(\v2\x1c.product.ExternalActionInputR\aactions\"|\n" +
+	"\x1bSyncExternalActionsResponse\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\x12)\n" +
+	"\x10actions_upserted\x18\x03 \x01(\x03R\x0factionsUpserted*^\n" +
 	"\bSyncMode\x12\x19\n" +
 	"\x15SYNC_MODE_UNSPECIFIED\x10\x00\x12\x19\n" +
 	"\x15SYNC_MODE_UPSERT_ONLY\x10\x01\x12\x1c\n" +
-	"\x18SYNC_MODE_REPLACE_SOURCE\x10\x022]\n" +
+	"\x18SYNC_MODE_REPLACE_SOURCE\x10\x022\x83\x02\n" +
 	"\x0eProductService\x12K\n" +
-	"\fSyncProducts\x12\x1c.product.SyncProductsRequest\x1a\x1d.product.SyncProductsResponseBEZCgithub.com/poshagator/content-service/pkg/proto/product/gen;productb\x06proto3"
+	"\fSyncProducts\x12\x1c.product.SyncProductsRequest\x1a\x1d.product.SyncProductsResponse\x12B\n" +
+	"\tSyncFuels\x12\x19.product.SyncFuelsRequest\x1a\x1a.product.SyncFuelsResponse\x12`\n" +
+	"\x13SyncExternalActions\x12#.product.SyncExternalActionsRequest\x1a$.product.SyncExternalActionsResponseBEZCgithub.com/poshagator/content-service/pkg/proto/product/gen;productb\x06proto3"
 
 var (
 	file_pkg_proto_product_product_proto_rawDescOnce sync.Once
@@ -465,25 +815,37 @@ func file_pkg_proto_product_product_proto_rawDescGZIP() []byte {
 }
 
 var file_pkg_proto_product_product_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_pkg_proto_product_product_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_pkg_proto_product_product_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_pkg_proto_product_product_proto_goTypes = []any{
-	(SyncMode)(0),                // 0: product.SyncMode
-	(*SyncProductsRequest)(nil),  // 1: product.SyncProductsRequest
-	(*ProductCategoryInput)(nil), // 2: product.ProductCategoryInput
-	(*ProductInput)(nil),         // 3: product.ProductInput
-	(*SyncProductsResponse)(nil), // 4: product.SyncProductsResponse
+	(SyncMode)(0),                       // 0: product.SyncMode
+	(*SyncProductsRequest)(nil),         // 1: product.SyncProductsRequest
+	(*ProductCategoryInput)(nil),        // 2: product.ProductCategoryInput
+	(*ProductInput)(nil),                // 3: product.ProductInput
+	(*SyncProductsResponse)(nil),        // 4: product.SyncProductsResponse
+	(*FuelInput)(nil),                   // 5: product.FuelInput
+	(*SyncFuelsRequest)(nil),            // 6: product.SyncFuelsRequest
+	(*SyncFuelsResponse)(nil),           // 7: product.SyncFuelsResponse
+	(*ExternalActionInput)(nil),         // 8: product.ExternalActionInput
+	(*SyncExternalActionsRequest)(nil),  // 9: product.SyncExternalActionsRequest
+	(*SyncExternalActionsResponse)(nil), // 10: product.SyncExternalActionsResponse
 }
 var file_pkg_proto_product_product_proto_depIdxs = []int32{
-	0, // 0: product.SyncProductsRequest.mode:type_name -> product.SyncMode
-	2, // 1: product.SyncProductsRequest.categories:type_name -> product.ProductCategoryInput
-	3, // 2: product.ProductCategoryInput.products:type_name -> product.ProductInput
-	1, // 3: product.ProductService.SyncProducts:input_type -> product.SyncProductsRequest
-	4, // 4: product.ProductService.SyncProducts:output_type -> product.SyncProductsResponse
-	4, // [4:5] is the sub-list for method output_type
-	3, // [3:4] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+	0,  // 0: product.SyncProductsRequest.mode:type_name -> product.SyncMode
+	2,  // 1: product.SyncProductsRequest.categories:type_name -> product.ProductCategoryInput
+	3,  // 2: product.ProductCategoryInput.products:type_name -> product.ProductInput
+	5,  // 3: product.SyncFuelsRequest.fuels:type_name -> product.FuelInput
+	8,  // 4: product.SyncExternalActionsRequest.actions:type_name -> product.ExternalActionInput
+	1,  // 5: product.ProductService.SyncProducts:input_type -> product.SyncProductsRequest
+	6,  // 6: product.ProductService.SyncFuels:input_type -> product.SyncFuelsRequest
+	9,  // 7: product.ProductService.SyncExternalActions:input_type -> product.SyncExternalActionsRequest
+	4,  // 8: product.ProductService.SyncProducts:output_type -> product.SyncProductsResponse
+	7,  // 9: product.ProductService.SyncFuels:output_type -> product.SyncFuelsResponse
+	10, // 10: product.ProductService.SyncExternalActions:output_type -> product.SyncExternalActionsResponse
+	8,  // [8:11] is the sub-list for method output_type
+	5,  // [5:8] is the sub-list for method input_type
+	5,  // [5:5] is the sub-list for extension type_name
+	5,  // [5:5] is the sub-list for extension extendee
+	0,  // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_pkg_proto_product_product_proto_init() }
@@ -497,7 +859,7 @@ func file_pkg_proto_product_product_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pkg_proto_product_product_proto_rawDesc), len(file_pkg_proto_product_product_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   4,
+			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

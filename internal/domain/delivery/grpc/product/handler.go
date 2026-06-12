@@ -8,6 +8,8 @@ import (
 
 	"github.com/google/uuid"
 	entity "github.com/poshagator/content-service/internal/domain/entities/product"
+	ucaction "github.com/poshagator/content-service/internal/domain/usecase/action"
+	ucfuel "github.com/poshagator/content-service/internal/domain/usecase/fuel"
 	ucproduct "github.com/poshagator/content-service/internal/domain/usecase/product"
 	productpb "github.com/poshagator/content-service/pkg/proto/product/gen"
 	"go.uber.org/zap"
@@ -17,14 +19,18 @@ import (
 
 type Handler struct {
 	productpb.UnimplementedProductServiceServer
-	log     *zap.Logger
-	usecase *ucproduct.Usecase
+	log      *zap.Logger
+	usecase  *ucproduct.Usecase
+	actionUC *ucaction.Usecase
+	fuelUC   *ucfuel.Usecase
 }
 
-func NewHandler(log *zap.Logger, usecase *ucproduct.Usecase) *Handler {
+func NewHandler(log *zap.Logger, usecase *ucproduct.Usecase, actionUC *ucaction.Usecase, fuelUC *ucfuel.Usecase) *Handler {
 	return &Handler{
-		log:     log.Named("grpc.product"),
-		usecase: usecase,
+		log:      log.Named("grpc.product"),
+		usecase:  usecase,
+		actionUC: actionUC,
+		fuelUC:   fuelUC,
 	}
 }
 

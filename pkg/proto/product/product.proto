@@ -6,6 +6,8 @@ option go_package = "github.com/poshagator/content-service/pkg/proto/product/gen
 
 service ProductService {
   rpc SyncProducts(SyncProductsRequest) returns (SyncProductsResponse);
+  rpc SyncFuels(SyncFuelsRequest) returns (SyncFuelsResponse);
+  rpc SyncExternalActions(SyncExternalActionsRequest) returns (SyncExternalActionsResponse);
 }
 
 enum SyncMode {
@@ -48,4 +50,36 @@ message SyncProductsResponse {
   int64 categories_upserted = 3;
   int64 products_upserted = 4;
   int64 products_disabled = 5;
+}
+
+message FuelInput {
+  string name = 1;
+  double price = 2;
+}
+
+message SyncFuelsRequest {
+  string filial_id = 1;
+  repeated FuelInput fuels = 2;
+}
+
+message SyncFuelsResponse {
+  bool success = 1;
+  string message = 2;
+  int64 fuels_upserted = 3;
+}
+
+message ExternalActionInput {
+  string title = 1;
+  string url = 2;
+}
+
+message SyncExternalActionsRequest {
+  string filial_id = 1;
+  repeated ExternalActionInput actions = 2;
+}
+
+message SyncExternalActionsResponse {
+  bool success = 1;
+  string message = 2;
+  int64 actions_upserted = 3;
 }
