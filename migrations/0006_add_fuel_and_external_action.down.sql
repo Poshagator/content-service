@@ -1,0 +1,6 @@
+BEGIN;
+
+DROP TABLE IF EXISTS public.fuel CASCADE;
+DROP TABLE IF EXISTS public.external_action CASCADE;
+
+COMMIT;
