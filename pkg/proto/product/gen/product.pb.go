@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        v6.33.4
-// source: pkg/proto/product/product.proto
+// source: product.proto
 
 package product
 
@@ -21,215 +21,6 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type SyncMode int32
-
-const (
-	SyncMode_SYNC_MODE_UNSPECIFIED    SyncMode = 0
-	SyncMode_SYNC_MODE_UPSERT_ONLY    SyncMode = 1
-	SyncMode_SYNC_MODE_REPLACE_SOURCE SyncMode = 2
-)
-
-// Enum value maps for SyncMode.
-var (
-	SyncMode_name = map[int32]string{
-		0: "SYNC_MODE_UNSPECIFIED",
-		1: "SYNC_MODE_UPSERT_ONLY",
-		2: "SYNC_MODE_REPLACE_SOURCE",
-	}
-	SyncMode_value = map[string]int32{
-		"SYNC_MODE_UNSPECIFIED":    0,
-		"SYNC_MODE_UPSERT_ONLY":    1,
-		"SYNC_MODE_REPLACE_SOURCE": 2,
-	}
-)
-
-func (x SyncMode) Enum() *SyncMode {
-	p := new(SyncMode)
-	*p = x
-	return p
-}
-
-func (x SyncMode) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (SyncMode) Descriptor() protoreflect.EnumDescriptor {
-	return file_pkg_proto_product_product_proto_enumTypes[0].Descriptor()
-}
-
-func (SyncMode) Type() protoreflect.EnumType {
-	return &file_pkg_proto_product_product_proto_enumTypes[0]
-}
-
-func (x SyncMode) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use SyncMode.Descriptor instead.
-func (SyncMode) EnumDescriptor() ([]byte, []int) {
-	return file_pkg_proto_product_product_proto_rawDescGZIP(), []int{0}
-}
-
-type SyncProductsRequest struct {
-	state            protoimpl.MessageState  `protogen:"open.v1"`
-	FilialId         string                  `protobuf:"bytes,1,opt,name=filial_id,json=filialId,proto3" json:"filial_id,omitempty"`
-	ExternalFilialId string                  `protobuf:"bytes,2,opt,name=external_filial_id,json=externalFilialId,proto3" json:"external_filial_id,omitempty"`
-	Source           string                  `protobuf:"bytes,3,opt,name=source,proto3" json:"source,omitempty"`
-	Mode             SyncMode                `protobuf:"varint,4,opt,name=mode,proto3,enum=product.SyncMode" json:"mode,omitempty"`
-	Categories       []*ProductCategoryInput `protobuf:"bytes,5,rep,name=categories,proto3" json:"categories,omitempty"`
-	PayloadJson      string                  `protobuf:"bytes,6,opt,name=payload_json,json=payloadJson,proto3" json:"payload_json,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
-}
-
-func (x *SyncProductsRequest) Reset() {
-	*x = SyncProductsRequest{}
-	mi := &file_pkg_proto_product_product_proto_msgTypes[0]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *SyncProductsRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SyncProductsRequest) ProtoMessage() {}
-
-func (x *SyncProductsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_proto_product_product_proto_msgTypes[0]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use SyncProductsRequest.ProtoReflect.Descriptor instead.
-func (*SyncProductsRequest) Descriptor() ([]byte, []int) {
-	return file_pkg_proto_product_product_proto_rawDescGZIP(), []int{0}
-}
-
-func (x *SyncProductsRequest) GetFilialId() string {
-	if x != nil {
-		return x.FilialId
-	}
-	return ""
-}
-
-func (x *SyncProductsRequest) GetExternalFilialId() string {
-	if x != nil {
-		return x.ExternalFilialId
-	}
-	return ""
-}
-
-func (x *SyncProductsRequest) GetSource() string {
-	if x != nil {
-		return x.Source
-	}
-	return ""
-}
-
-func (x *SyncProductsRequest) GetMode() SyncMode {
-	if x != nil {
-		return x.Mode
-	}
-	return SyncMode_SYNC_MODE_UNSPECIFIED
-}
-
-func (x *SyncProductsRequest) GetCategories() []*ProductCategoryInput {
-	if x != nil {
-		return x.Categories
-	}
-	return nil
-}
-
-func (x *SyncProductsRequest) GetPayloadJson() string {
-	if x != nil {
-		return x.PayloadJson
-	}
-	return ""
-}
-
-type ProductCategoryInput struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	ExternalId    string                 `protobuf:"bytes,1,opt,name=external_id,json=externalId,proto3" json:"external_id,omitempty"`
-	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	PhotoUrl      string                 `protobuf:"bytes,3,opt,name=photo_url,json=photoUrl,proto3" json:"photo_url,omitempty"`
-	Type          string                 `protobuf:"bytes,4,opt,name=type,proto3" json:"type,omitempty"`
-	Products      []*ProductInput        `protobuf:"bytes,5,rep,name=products,proto3" json:"products,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ProductCategoryInput) Reset() {
-	*x = ProductCategoryInput{}
-	mi := &file_pkg_proto_product_product_proto_msgTypes[1]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ProductCategoryInput) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ProductCategoryInput) ProtoMessage() {}
-
-func (x *ProductCategoryInput) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_proto_product_product_proto_msgTypes[1]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ProductCategoryInput.ProtoReflect.Descriptor instead.
-func (*ProductCategoryInput) Descriptor() ([]byte, []int) {
-	return file_pkg_proto_product_product_proto_rawDescGZIP(), []int{1}
-}
-
-func (x *ProductCategoryInput) GetExternalId() string {
-	if x != nil {
-		return x.ExternalId
-	}
-	return ""
-}
-
-func (x *ProductCategoryInput) GetName() string {
-	if x != nil {
-		return x.Name
-	}
-	return ""
-}
-
-func (x *ProductCategoryInput) GetPhotoUrl() string {
-	if x != nil {
-		return x.PhotoUrl
-	}
-	return ""
-}
-
-func (x *ProductCategoryInput) GetType() string {
-	if x != nil {
-		return x.Type
-	}
-	return ""
-}
-
-func (x *ProductCategoryInput) GetProducts() []*ProductInput {
-	if x != nil {
-		return x.Products
-	}
-	return nil
-}
-
 type ProductInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ExternalId    string                 `protobuf:"bytes,1,opt,name=external_id,json=externalId,proto3" json:"external_id,omitempty"`
@@ -238,15 +29,16 @@ type ProductInput struct {
 	BasePrice     float64                `protobuf:"fixed64,4,opt,name=base_price,json=basePrice,proto3" json:"base_price,omitempty"`
 	Currency      string                 `protobuf:"bytes,5,opt,name=currency,proto3" json:"currency,omitempty"`
 	Weight        string                 `protobuf:"bytes,6,opt,name=weight,proto3" json:"weight,omitempty"`
-	Status        bool                   `protobuf:"varint,7,opt,name=status,proto3" json:"status,omitempty"`
-	MediaUrls     []string               `protobuf:"bytes,8,rep,name=media_urls,json=mediaUrls,proto3" json:"media_urls,omitempty"`
+	Volume        string                 `protobuf:"bytes,7,opt,name=volume,proto3" json:"volume,omitempty"`
+	Status        *bool                  `protobuf:"varint,8,opt,name=status,proto3,oneof" json:"status,omitempty"`
+	MediaUrls     []string               `protobuf:"bytes,9,rep,name=media_urls,json=mediaUrls,proto3" json:"media_urls,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ProductInput) Reset() {
 	*x = ProductInput{}
-	mi := &file_pkg_proto_product_product_proto_msgTypes[2]
+	mi := &file_product_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -258,7 +50,7 @@ func (x *ProductInput) String() string {
 func (*ProductInput) ProtoMessage() {}
 
 func (x *ProductInput) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_proto_product_product_proto_msgTypes[2]
+	mi := &file_product_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -271,7 +63,7 @@ func (x *ProductInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ProductInput.ProtoReflect.Descriptor instead.
 func (*ProductInput) Descriptor() ([]byte, []int) {
-	return file_pkg_proto_product_product_proto_rawDescGZIP(), []int{2}
+	return file_product_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *ProductInput) GetExternalId() string {
@@ -316,9 +108,16 @@ func (x *ProductInput) GetWeight() string {
 	return ""
 }
 
-func (x *ProductInput) GetStatus() bool {
+func (x *ProductInput) GetVolume() string {
 	if x != nil {
-		return x.Status
+		return x.Volume
+	}
+	return ""
+}
+
+func (x *ProductInput) GetStatus() bool {
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return false
 }
@@ -330,32 +129,33 @@ func (x *ProductInput) GetMediaUrls() []string {
 	return nil
 }
 
-type SyncProductsResponse struct {
+type UpsertProductRequest struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
-	Success            bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
-	Message            string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
-	CategoriesUpserted int64                  `protobuf:"varint,3,opt,name=categories_upserted,json=categoriesUpserted,proto3" json:"categories_upserted,omitempty"`
-	ProductsUpserted   int64                  `protobuf:"varint,4,opt,name=products_upserted,json=productsUpserted,proto3" json:"products_upserted,omitempty"`
-	ProductsDisabled   int64                  `protobuf:"varint,5,opt,name=products_disabled,json=productsDisabled,proto3" json:"products_disabled,omitempty"`
+	FilialId           string                 `protobuf:"bytes,1,opt,name=filial_id,json=filialId,proto3" json:"filial_id,omitempty"`
+	Source             string                 `protobuf:"bytes,2,opt,name=source,proto3" json:"source,omitempty"`
+	Product            *ProductInput          `protobuf:"bytes,3,opt,name=product,proto3" json:"product,omitempty"`
+	CategoryId         *string                `protobuf:"bytes,4,opt,name=category_id,json=categoryId,proto3,oneof" json:"category_id,omitempty"`
+	CategoryExternalId *string                `protobuf:"bytes,5,opt,name=category_external_id,json=categoryExternalId,proto3,oneof" json:"category_external_id,omitempty"`
+	CategoryName       *string                `protobuf:"bytes,6,opt,name=category_name,json=categoryName,proto3,oneof" json:"category_name,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
 
-func (x *SyncProductsResponse) Reset() {
-	*x = SyncProductsResponse{}
-	mi := &file_pkg_proto_product_product_proto_msgTypes[3]
+func (x *UpsertProductRequest) Reset() {
+	*x = UpsertProductRequest{}
+	mi := &file_product_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *SyncProductsResponse) String() string {
+func (x *UpsertProductRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*SyncProductsResponse) ProtoMessage() {}
+func (*UpsertProductRequest) ProtoMessage() {}
 
-func (x *SyncProductsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_proto_product_product_proto_msgTypes[3]
+func (x *UpsertProductRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_product_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -366,44 +166,459 @@ func (x *SyncProductsResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SyncProductsResponse.ProtoReflect.Descriptor instead.
-func (*SyncProductsResponse) Descriptor() ([]byte, []int) {
-	return file_pkg_proto_product_product_proto_rawDescGZIP(), []int{3}
+// Deprecated: Use UpsertProductRequest.ProtoReflect.Descriptor instead.
+func (*UpsertProductRequest) Descriptor() ([]byte, []int) {
+	return file_product_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *SyncProductsResponse) GetSuccess() bool {
+func (x *UpsertProductRequest) GetFilialId() string {
 	if x != nil {
-		return x.Success
-	}
-	return false
-}
-
-func (x *SyncProductsResponse) GetMessage() string {
-	if x != nil {
-		return x.Message
+		return x.FilialId
 	}
 	return ""
 }
 
-func (x *SyncProductsResponse) GetCategoriesUpserted() int64 {
+func (x *UpsertProductRequest) GetSource() string {
 	if x != nil {
-		return x.CategoriesUpserted
+		return x.Source
 	}
-	return 0
+	return ""
 }
 
-func (x *SyncProductsResponse) GetProductsUpserted() int64 {
+func (x *UpsertProductRequest) GetProduct() *ProductInput {
 	if x != nil {
-		return x.ProductsUpserted
+		return x.Product
 	}
-	return 0
+	return nil
 }
 
-func (x *SyncProductsResponse) GetProductsDisabled() int64 {
-	if x != nil {
-		return x.ProductsDisabled
+func (x *UpsertProductRequest) GetCategoryId() string {
+	if x != nil && x.CategoryId != nil {
+		return *x.CategoryId
 	}
-	return 0
+	return ""
+}
+
+func (x *UpsertProductRequest) GetCategoryExternalId() string {
+	if x != nil && x.CategoryExternalId != nil {
+		return *x.CategoryExternalId
+	}
+	return ""
+}
+
+func (x *UpsertProductRequest) GetCategoryName() string {
+	if x != nil && x.CategoryName != nil {
+		return *x.CategoryName
+	}
+	return ""
+}
+
+type UpsertProductResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ProductId     string                 `protobuf:"bytes,1,opt,name=product_id,json=productId,proto3" json:"product_id,omitempty"`
+	Created       bool                   `protobuf:"varint,2,opt,name=created,proto3" json:"created,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpsertProductResponse) Reset() {
+	*x = UpsertProductResponse{}
+	mi := &file_product_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpsertProductResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpsertProductResponse) ProtoMessage() {}
+
+func (x *UpsertProductResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_product_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpsertProductResponse.ProtoReflect.Descriptor instead.
+func (*UpsertProductResponse) Descriptor() ([]byte, []int) {
+	return file_product_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *UpsertProductResponse) GetProductId() string {
+	if x != nil {
+		return x.ProductId
+	}
+	return ""
+}
+
+func (x *UpsertProductResponse) GetCreated() bool {
+	if x != nil {
+		return x.Created
+	}
+	return false
+}
+
+type BatchUpsertProductsRequest struct {
+	state         protoimpl.MessageState  `protogen:"open.v1"`
+	Products      []*UpsertProductRequest `protobuf:"bytes,1,rep,name=products,proto3" json:"products,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BatchUpsertProductsRequest) Reset() {
+	*x = BatchUpsertProductsRequest{}
+	mi := &file_product_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BatchUpsertProductsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BatchUpsertProductsRequest) ProtoMessage() {}
+
+func (x *BatchUpsertProductsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_product_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BatchUpsertProductsRequest.ProtoReflect.Descriptor instead.
+func (*BatchUpsertProductsRequest) Descriptor() ([]byte, []int) {
+	return file_product_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *BatchUpsertProductsRequest) GetProducts() []*UpsertProductRequest {
+	if x != nil {
+		return x.Products
+	}
+	return nil
+}
+
+type BatchUpsertProductsResponse struct {
+	state         protoimpl.MessageState   `protogen:"open.v1"`
+	Products      []*UpsertProductResponse `protobuf:"bytes,1,rep,name=products,proto3" json:"products,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BatchUpsertProductsResponse) Reset() {
+	*x = BatchUpsertProductsResponse{}
+	mi := &file_product_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BatchUpsertProductsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BatchUpsertProductsResponse) ProtoMessage() {}
+
+func (x *BatchUpsertProductsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_product_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BatchUpsertProductsResponse.ProtoReflect.Descriptor instead.
+func (*BatchUpsertProductsResponse) Descriptor() ([]byte, []int) {
+	return file_product_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *BatchUpsertProductsResponse) GetProducts() []*UpsertProductResponse {
+	if x != nil {
+		return x.Products
+	}
+	return nil
+}
+
+type CategoryInput struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ExternalId    string                 `protobuf:"bytes,1,opt,name=external_id,json=externalId,proto3" json:"external_id,omitempty"`
+	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	PhotoUrl      *string                `protobuf:"bytes,3,opt,name=photo_url,json=photoUrl,proto3,oneof" json:"photo_url,omitempty"`
+	Type          *string                `protobuf:"bytes,4,opt,name=type,proto3,oneof" json:"type,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CategoryInput) Reset() {
+	*x = CategoryInput{}
+	mi := &file_product_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CategoryInput) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CategoryInput) ProtoMessage() {}
+
+func (x *CategoryInput) ProtoReflect() protoreflect.Message {
+	mi := &file_product_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CategoryInput.ProtoReflect.Descriptor instead.
+func (*CategoryInput) Descriptor() ([]byte, []int) {
+	return file_product_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *CategoryInput) GetExternalId() string {
+	if x != nil {
+		return x.ExternalId
+	}
+	return ""
+}
+
+func (x *CategoryInput) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *CategoryInput) GetPhotoUrl() string {
+	if x != nil && x.PhotoUrl != nil {
+		return *x.PhotoUrl
+	}
+	return ""
+}
+
+func (x *CategoryInput) GetType() string {
+	if x != nil && x.Type != nil {
+		return *x.Type
+	}
+	return ""
+}
+
+type UpsertCategoryRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	FilialId      string                 `protobuf:"bytes,1,opt,name=filial_id,json=filialId,proto3" json:"filial_id,omitempty"`
+	Source        string                 `protobuf:"bytes,2,opt,name=source,proto3" json:"source,omitempty"`
+	Category      *CategoryInput         `protobuf:"bytes,3,opt,name=category,proto3" json:"category,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpsertCategoryRequest) Reset() {
+	*x = UpsertCategoryRequest{}
+	mi := &file_product_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpsertCategoryRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpsertCategoryRequest) ProtoMessage() {}
+
+func (x *UpsertCategoryRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_product_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpsertCategoryRequest.ProtoReflect.Descriptor instead.
+func (*UpsertCategoryRequest) Descriptor() ([]byte, []int) {
+	return file_product_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *UpsertCategoryRequest) GetFilialId() string {
+	if x != nil {
+		return x.FilialId
+	}
+	return ""
+}
+
+func (x *UpsertCategoryRequest) GetSource() string {
+	if x != nil {
+		return x.Source
+	}
+	return ""
+}
+
+func (x *UpsertCategoryRequest) GetCategory() *CategoryInput {
+	if x != nil {
+		return x.Category
+	}
+	return nil
+}
+
+type UpsertCategoryResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	CategoryId    string                 `protobuf:"bytes,1,opt,name=category_id,json=categoryId,proto3" json:"category_id,omitempty"`
+	Created       bool                   `protobuf:"varint,2,opt,name=created,proto3" json:"created,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpsertCategoryResponse) Reset() {
+	*x = UpsertCategoryResponse{}
+	mi := &file_product_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpsertCategoryResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpsertCategoryResponse) ProtoMessage() {}
+
+func (x *UpsertCategoryResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_product_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpsertCategoryResponse.ProtoReflect.Descriptor instead.
+func (*UpsertCategoryResponse) Descriptor() ([]byte, []int) {
+	return file_product_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *UpsertCategoryResponse) GetCategoryId() string {
+	if x != nil {
+		return x.CategoryId
+	}
+	return ""
+}
+
+func (x *UpsertCategoryResponse) GetCreated() bool {
+	if x != nil {
+		return x.Created
+	}
+	return false
+}
+
+type BatchUpsertCategoriesRequest struct {
+	state         protoimpl.MessageState   `protogen:"open.v1"`
+	Categories    []*UpsertCategoryRequest `protobuf:"bytes,1,rep,name=categories,proto3" json:"categories,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BatchUpsertCategoriesRequest) Reset() {
+	*x = BatchUpsertCategoriesRequest{}
+	mi := &file_product_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BatchUpsertCategoriesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BatchUpsertCategoriesRequest) ProtoMessage() {}
+
+func (x *BatchUpsertCategoriesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_product_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BatchUpsertCategoriesRequest.ProtoReflect.Descriptor instead.
+func (*BatchUpsertCategoriesRequest) Descriptor() ([]byte, []int) {
+	return file_product_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *BatchUpsertCategoriesRequest) GetCategories() []*UpsertCategoryRequest {
+	if x != nil {
+		return x.Categories
+	}
+	return nil
+}
+
+type BatchUpsertCategoriesResponse struct {
+	state         protoimpl.MessageState    `protogen:"open.v1"`
+	Categories    []*UpsertCategoryResponse `protobuf:"bytes,1,rep,name=categories,proto3" json:"categories,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BatchUpsertCategoriesResponse) Reset() {
+	*x = BatchUpsertCategoriesResponse{}
+	mi := &file_product_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BatchUpsertCategoriesResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BatchUpsertCategoriesResponse) ProtoMessage() {}
+
+func (x *BatchUpsertCategoriesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_product_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BatchUpsertCategoriesResponse.ProtoReflect.Descriptor instead.
+func (*BatchUpsertCategoriesResponse) Descriptor() ([]byte, []int) {
+	return file_product_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *BatchUpsertCategoriesResponse) GetCategories() []*UpsertCategoryResponse {
+	if x != nil {
+		return x.Categories
+	}
+	return nil
 }
 
 type FuelInput struct {
@@ -416,7 +631,7 @@ type FuelInput struct {
 
 func (x *FuelInput) Reset() {
 	*x = FuelInput{}
-	mi := &file_pkg_proto_product_product_proto_msgTypes[4]
+	mi := &file_product_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -428,7 +643,7 @@ func (x *FuelInput) String() string {
 func (*FuelInput) ProtoMessage() {}
 
 func (x *FuelInput) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_proto_product_product_proto_msgTypes[4]
+	mi := &file_product_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -441,7 +656,7 @@ func (x *FuelInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FuelInput.ProtoReflect.Descriptor instead.
 func (*FuelInput) Descriptor() ([]byte, []int) {
-	return file_pkg_proto_product_product_proto_rawDescGZIP(), []int{4}
+	return file_product_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *FuelInput) GetName() string {
@@ -458,29 +673,29 @@ func (x *FuelInput) GetPrice() float64 {
 	return 0
 }
 
-type SyncFuelsRequest struct {
+type UpsertFuelRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	FilialId      string                 `protobuf:"bytes,1,opt,name=filial_id,json=filialId,proto3" json:"filial_id,omitempty"`
-	Fuels         []*FuelInput           `protobuf:"bytes,2,rep,name=fuels,proto3" json:"fuels,omitempty"`
+	Fuel          *FuelInput             `protobuf:"bytes,2,opt,name=fuel,proto3" json:"fuel,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *SyncFuelsRequest) Reset() {
-	*x = SyncFuelsRequest{}
-	mi := &file_pkg_proto_product_product_proto_msgTypes[5]
+func (x *UpsertFuelRequest) Reset() {
+	*x = UpsertFuelRequest{}
+	mi := &file_product_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *SyncFuelsRequest) String() string {
+func (x *UpsertFuelRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*SyncFuelsRequest) ProtoMessage() {}
+func (*UpsertFuelRequest) ProtoMessage() {}
 
-func (x *SyncFuelsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_proto_product_product_proto_msgTypes[5]
+func (x *UpsertFuelRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_product_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -491,49 +706,48 @@ func (x *SyncFuelsRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SyncFuelsRequest.ProtoReflect.Descriptor instead.
-func (*SyncFuelsRequest) Descriptor() ([]byte, []int) {
-	return file_pkg_proto_product_product_proto_rawDescGZIP(), []int{5}
+// Deprecated: Use UpsertFuelRequest.ProtoReflect.Descriptor instead.
+func (*UpsertFuelRequest) Descriptor() ([]byte, []int) {
+	return file_product_proto_rawDescGZIP(), []int{11}
 }
 
-func (x *SyncFuelsRequest) GetFilialId() string {
+func (x *UpsertFuelRequest) GetFilialId() string {
 	if x != nil {
 		return x.FilialId
 	}
 	return ""
 }
 
-func (x *SyncFuelsRequest) GetFuels() []*FuelInput {
+func (x *UpsertFuelRequest) GetFuel() *FuelInput {
 	if x != nil {
-		return x.Fuels
+		return x.Fuel
 	}
 	return nil
 }
 
-type SyncFuelsResponse struct {
+type UpsertFuelResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
-	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
-	FuelsUpserted int64                  `protobuf:"varint,3,opt,name=fuels_upserted,json=fuelsUpserted,proto3" json:"fuels_upserted,omitempty"`
+	FuelId        string                 `protobuf:"bytes,1,opt,name=fuel_id,json=fuelId,proto3" json:"fuel_id,omitempty"`
+	Created       bool                   `protobuf:"varint,2,opt,name=created,proto3" json:"created,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *SyncFuelsResponse) Reset() {
-	*x = SyncFuelsResponse{}
-	mi := &file_pkg_proto_product_product_proto_msgTypes[6]
+func (x *UpsertFuelResponse) Reset() {
+	*x = UpsertFuelResponse{}
+	mi := &file_product_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *SyncFuelsResponse) String() string {
+func (x *UpsertFuelResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*SyncFuelsResponse) ProtoMessage() {}
+func (*UpsertFuelResponse) ProtoMessage() {}
 
-func (x *SyncFuelsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_proto_product_product_proto_msgTypes[6]
+func (x *UpsertFuelResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_product_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -544,30 +758,111 @@ func (x *SyncFuelsResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SyncFuelsResponse.ProtoReflect.Descriptor instead.
-func (*SyncFuelsResponse) Descriptor() ([]byte, []int) {
-	return file_pkg_proto_product_product_proto_rawDescGZIP(), []int{6}
+// Deprecated: Use UpsertFuelResponse.ProtoReflect.Descriptor instead.
+func (*UpsertFuelResponse) Descriptor() ([]byte, []int) {
+	return file_product_proto_rawDescGZIP(), []int{12}
 }
 
-func (x *SyncFuelsResponse) GetSuccess() bool {
+func (x *UpsertFuelResponse) GetFuelId() string {
 	if x != nil {
-		return x.Success
-	}
-	return false
-}
-
-func (x *SyncFuelsResponse) GetMessage() string {
-	if x != nil {
-		return x.Message
+		return x.FuelId
 	}
 	return ""
 }
 
-func (x *SyncFuelsResponse) GetFuelsUpserted() int64 {
+func (x *UpsertFuelResponse) GetCreated() bool {
 	if x != nil {
-		return x.FuelsUpserted
+		return x.Created
 	}
-	return 0
+	return false
+}
+
+type BatchUpsertFuelsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Fuels         []*UpsertFuelRequest   `protobuf:"bytes,1,rep,name=fuels,proto3" json:"fuels,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BatchUpsertFuelsRequest) Reset() {
+	*x = BatchUpsertFuelsRequest{}
+	mi := &file_product_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BatchUpsertFuelsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BatchUpsertFuelsRequest) ProtoMessage() {}
+
+func (x *BatchUpsertFuelsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_product_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BatchUpsertFuelsRequest.ProtoReflect.Descriptor instead.
+func (*BatchUpsertFuelsRequest) Descriptor() ([]byte, []int) {
+	return file_product_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *BatchUpsertFuelsRequest) GetFuels() []*UpsertFuelRequest {
+	if x != nil {
+		return x.Fuels
+	}
+	return nil
+}
+
+type BatchUpsertFuelsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Fuels         []*UpsertFuelResponse  `protobuf:"bytes,1,rep,name=fuels,proto3" json:"fuels,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BatchUpsertFuelsResponse) Reset() {
+	*x = BatchUpsertFuelsResponse{}
+	mi := &file_product_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BatchUpsertFuelsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BatchUpsertFuelsResponse) ProtoMessage() {}
+
+func (x *BatchUpsertFuelsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_product_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BatchUpsertFuelsResponse.ProtoReflect.Descriptor instead.
+func (*BatchUpsertFuelsResponse) Descriptor() ([]byte, []int) {
+	return file_product_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *BatchUpsertFuelsResponse) GetFuels() []*UpsertFuelResponse {
+	if x != nil {
+		return x.Fuels
+	}
+	return nil
 }
 
 type ExternalActionInput struct {
@@ -580,7 +875,7 @@ type ExternalActionInput struct {
 
 func (x *ExternalActionInput) Reset() {
 	*x = ExternalActionInput{}
-	mi := &file_pkg_proto_product_product_proto_msgTypes[7]
+	mi := &file_product_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -592,7 +887,7 @@ func (x *ExternalActionInput) String() string {
 func (*ExternalActionInput) ProtoMessage() {}
 
 func (x *ExternalActionInput) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_proto_product_product_proto_msgTypes[7]
+	mi := &file_product_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -605,7 +900,7 @@ func (x *ExternalActionInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ExternalActionInput.ProtoReflect.Descriptor instead.
 func (*ExternalActionInput) Descriptor() ([]byte, []int) {
-	return file_pkg_proto_product_product_proto_rawDescGZIP(), []int{7}
+	return file_product_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *ExternalActionInput) GetTitle() string {
@@ -622,29 +917,29 @@ func (x *ExternalActionInput) GetUrl() string {
 	return ""
 }
 
-type SyncExternalActionsRequest struct {
+type UpsertExternalActionRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	FilialId      string                 `protobuf:"bytes,1,opt,name=filial_id,json=filialId,proto3" json:"filial_id,omitempty"`
-	Actions       []*ExternalActionInput `protobuf:"bytes,2,rep,name=actions,proto3" json:"actions,omitempty"`
+	Action        *ExternalActionInput   `protobuf:"bytes,2,opt,name=action,proto3" json:"action,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *SyncExternalActionsRequest) Reset() {
-	*x = SyncExternalActionsRequest{}
-	mi := &file_pkg_proto_product_product_proto_msgTypes[8]
+func (x *UpsertExternalActionRequest) Reset() {
+	*x = UpsertExternalActionRequest{}
+	mi := &file_product_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *SyncExternalActionsRequest) String() string {
+func (x *UpsertExternalActionRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*SyncExternalActionsRequest) ProtoMessage() {}
+func (*UpsertExternalActionRequest) ProtoMessage() {}
 
-func (x *SyncExternalActionsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_proto_product_product_proto_msgTypes[8]
+func (x *UpsertExternalActionRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_product_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -655,49 +950,48 @@ func (x *SyncExternalActionsRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SyncExternalActionsRequest.ProtoReflect.Descriptor instead.
-func (*SyncExternalActionsRequest) Descriptor() ([]byte, []int) {
-	return file_pkg_proto_product_product_proto_rawDescGZIP(), []int{8}
+// Deprecated: Use UpsertExternalActionRequest.ProtoReflect.Descriptor instead.
+func (*UpsertExternalActionRequest) Descriptor() ([]byte, []int) {
+	return file_product_proto_rawDescGZIP(), []int{16}
 }
 
-func (x *SyncExternalActionsRequest) GetFilialId() string {
+func (x *UpsertExternalActionRequest) GetFilialId() string {
 	if x != nil {
 		return x.FilialId
 	}
 	return ""
 }
 
-func (x *SyncExternalActionsRequest) GetActions() []*ExternalActionInput {
+func (x *UpsertExternalActionRequest) GetAction() *ExternalActionInput {
 	if x != nil {
-		return x.Actions
+		return x.Action
 	}
 	return nil
 }
 
-type SyncExternalActionsResponse struct {
-	state           protoimpl.MessageState `protogen:"open.v1"`
-	Success         bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
-	Message         string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
-	ActionsUpserted int64                  `protobuf:"varint,3,opt,name=actions_upserted,json=actionsUpserted,proto3" json:"actions_upserted,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+type UpsertExternalActionResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ActionId      string                 `protobuf:"bytes,1,opt,name=action_id,json=actionId,proto3" json:"action_id,omitempty"`
+	Created       bool                   `protobuf:"varint,2,opt,name=created,proto3" json:"created,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
-func (x *SyncExternalActionsResponse) Reset() {
-	*x = SyncExternalActionsResponse{}
-	mi := &file_pkg_proto_product_product_proto_msgTypes[9]
+func (x *UpsertExternalActionResponse) Reset() {
+	*x = UpsertExternalActionResponse{}
+	mi := &file_product_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *SyncExternalActionsResponse) String() string {
+func (x *UpsertExternalActionResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*SyncExternalActionsResponse) ProtoMessage() {}
+func (*UpsertExternalActionResponse) ProtoMessage() {}
 
-func (x *SyncExternalActionsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_proto_product_product_proto_msgTypes[9]
+func (x *UpsertExternalActionResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_product_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -708,53 +1002,118 @@ func (x *SyncExternalActionsResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SyncExternalActionsResponse.ProtoReflect.Descriptor instead.
-func (*SyncExternalActionsResponse) Descriptor() ([]byte, []int) {
-	return file_pkg_proto_product_product_proto_rawDescGZIP(), []int{9}
+// Deprecated: Use UpsertExternalActionResponse.ProtoReflect.Descriptor instead.
+func (*UpsertExternalActionResponse) Descriptor() ([]byte, []int) {
+	return file_product_proto_rawDescGZIP(), []int{17}
 }
 
-func (x *SyncExternalActionsResponse) GetSuccess() bool {
+func (x *UpsertExternalActionResponse) GetActionId() string {
 	if x != nil {
-		return x.Success
-	}
-	return false
-}
-
-func (x *SyncExternalActionsResponse) GetMessage() string {
-	if x != nil {
-		return x.Message
+		return x.ActionId
 	}
 	return ""
 }
 
-func (x *SyncExternalActionsResponse) GetActionsUpserted() int64 {
+func (x *UpsertExternalActionResponse) GetCreated() bool {
 	if x != nil {
-		return x.ActionsUpserted
+		return x.Created
 	}
-	return 0
+	return false
 }
 
-var File_pkg_proto_product_product_proto protoreflect.FileDescriptor
+type BatchUpsertExternalActionsRequest struct {
+	state         protoimpl.MessageState         `protogen:"open.v1"`
+	Actions       []*UpsertExternalActionRequest `protobuf:"bytes,1,rep,name=actions,proto3" json:"actions,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
 
-const file_pkg_proto_product_product_proto_rawDesc = "" +
+func (x *BatchUpsertExternalActionsRequest) Reset() {
+	*x = BatchUpsertExternalActionsRequest{}
+	mi := &file_product_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BatchUpsertExternalActionsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BatchUpsertExternalActionsRequest) ProtoMessage() {}
+
+func (x *BatchUpsertExternalActionsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_product_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BatchUpsertExternalActionsRequest.ProtoReflect.Descriptor instead.
+func (*BatchUpsertExternalActionsRequest) Descriptor() ([]byte, []int) {
+	return file_product_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *BatchUpsertExternalActionsRequest) GetActions() []*UpsertExternalActionRequest {
+	if x != nil {
+		return x.Actions
+	}
+	return nil
+}
+
+type BatchUpsertExternalActionsResponse struct {
+	state         protoimpl.MessageState          `protogen:"open.v1"`
+	Actions       []*UpsertExternalActionResponse `protobuf:"bytes,1,rep,name=actions,proto3" json:"actions,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BatchUpsertExternalActionsResponse) Reset() {
+	*x = BatchUpsertExternalActionsResponse{}
+	mi := &file_product_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BatchUpsertExternalActionsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BatchUpsertExternalActionsResponse) ProtoMessage() {}
+
+func (x *BatchUpsertExternalActionsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_product_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BatchUpsertExternalActionsResponse.ProtoReflect.Descriptor instead.
+func (*BatchUpsertExternalActionsResponse) Descriptor() ([]byte, []int) {
+	return file_product_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *BatchUpsertExternalActionsResponse) GetActions() []*UpsertExternalActionResponse {
+	if x != nil {
+		return x.Actions
+	}
+	return nil
+}
+
+var File_product_proto protoreflect.FileDescriptor
+
+const file_product_proto_rawDesc = "" +
 	"\n" +
-	"\x1fpkg/proto/product/product.proto\x12\aproduct\"\x81\x02\n" +
-	"\x13SyncProductsRequest\x12\x1b\n" +
-	"\tfilial_id\x18\x01 \x01(\tR\bfilialId\x12,\n" +
-	"\x12external_filial_id\x18\x02 \x01(\tR\x10externalFilialId\x12\x16\n" +
-	"\x06source\x18\x03 \x01(\tR\x06source\x12%\n" +
-	"\x04mode\x18\x04 \x01(\x0e2\x11.product.SyncModeR\x04mode\x12=\n" +
-	"\n" +
-	"categories\x18\x05 \x03(\v2\x1d.product.ProductCategoryInputR\n" +
-	"categories\x12!\n" +
-	"\fpayload_json\x18\x06 \x01(\tR\vpayloadJson\"\xaf\x01\n" +
-	"\x14ProductCategoryInput\x12\x1f\n" +
-	"\vexternal_id\x18\x01 \x01(\tR\n" +
-	"externalId\x12\x12\n" +
-	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1b\n" +
-	"\tphoto_url\x18\x03 \x01(\tR\bphotoUrl\x12\x12\n" +
-	"\x04type\x18\x04 \x01(\tR\x04type\x121\n" +
-	"\bproducts\x18\x05 \x03(\v2\x15.product.ProductInputR\bproducts\"\xe3\x01\n" +
+	"\rproduct.proto\x12\aproduct\"\x8b\x02\n" +
 	"\fProductInput\x12\x1f\n" +
 	"\vexternal_id\x18\x01 \x01(\tR\n" +
 	"externalId\x12\x14\n" +
@@ -764,111 +1123,186 @@ const file_pkg_proto_product_product_proto_rawDesc = "" +
 	"base_price\x18\x04 \x01(\x01R\tbasePrice\x12\x1a\n" +
 	"\bcurrency\x18\x05 \x01(\tR\bcurrency\x12\x16\n" +
 	"\x06weight\x18\x06 \x01(\tR\x06weight\x12\x16\n" +
-	"\x06status\x18\a \x01(\bR\x06status\x12\x1d\n" +
+	"\x06volume\x18\a \x01(\tR\x06volume\x12\x1b\n" +
+	"\x06status\x18\b \x01(\bH\x00R\x06status\x88\x01\x01\x12\x1d\n" +
 	"\n" +
-	"media_urls\x18\b \x03(\tR\tmediaUrls\"\xd5\x01\n" +
-	"\x14SyncProductsResponse\x12\x18\n" +
-	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessage\x12/\n" +
-	"\x13categories_upserted\x18\x03 \x01(\x03R\x12categoriesUpserted\x12+\n" +
-	"\x11products_upserted\x18\x04 \x01(\x03R\x10productsUpserted\x12+\n" +
-	"\x11products_disabled\x18\x05 \x01(\x03R\x10productsDisabled\"5\n" +
+	"media_urls\x18\t \x03(\tR\tmediaUrlsB\t\n" +
+	"\a_status\"\xbe\x02\n" +
+	"\x14UpsertProductRequest\x12\x1b\n" +
+	"\tfilial_id\x18\x01 \x01(\tR\bfilialId\x12\x16\n" +
+	"\x06source\x18\x02 \x01(\tR\x06source\x12/\n" +
+	"\aproduct\x18\x03 \x01(\v2\x15.product.ProductInputR\aproduct\x12$\n" +
+	"\vcategory_id\x18\x04 \x01(\tH\x00R\n" +
+	"categoryId\x88\x01\x01\x125\n" +
+	"\x14category_external_id\x18\x05 \x01(\tH\x01R\x12categoryExternalId\x88\x01\x01\x12(\n" +
+	"\rcategory_name\x18\x06 \x01(\tH\x02R\fcategoryName\x88\x01\x01B\x0e\n" +
+	"\f_category_idB\x17\n" +
+	"\x15_category_external_idB\x10\n" +
+	"\x0e_category_name\"P\n" +
+	"\x15UpsertProductResponse\x12\x1d\n" +
+	"\n" +
+	"product_id\x18\x01 \x01(\tR\tproductId\x12\x18\n" +
+	"\acreated\x18\x02 \x01(\bR\acreated\"W\n" +
+	"\x1aBatchUpsertProductsRequest\x129\n" +
+	"\bproducts\x18\x01 \x03(\v2\x1d.product.UpsertProductRequestR\bproducts\"Y\n" +
+	"\x1bBatchUpsertProductsResponse\x12:\n" +
+	"\bproducts\x18\x01 \x03(\v2\x1e.product.UpsertProductResponseR\bproducts\"\x96\x01\n" +
+	"\rCategoryInput\x12\x1f\n" +
+	"\vexternal_id\x18\x01 \x01(\tR\n" +
+	"externalId\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12 \n" +
+	"\tphoto_url\x18\x03 \x01(\tH\x00R\bphotoUrl\x88\x01\x01\x12\x17\n" +
+	"\x04type\x18\x04 \x01(\tH\x01R\x04type\x88\x01\x01B\f\n" +
+	"\n" +
+	"_photo_urlB\a\n" +
+	"\x05_type\"\x80\x01\n" +
+	"\x15UpsertCategoryRequest\x12\x1b\n" +
+	"\tfilial_id\x18\x01 \x01(\tR\bfilialId\x12\x16\n" +
+	"\x06source\x18\x02 \x01(\tR\x06source\x122\n" +
+	"\bcategory\x18\x03 \x01(\v2\x16.product.CategoryInputR\bcategory\"S\n" +
+	"\x16UpsertCategoryResponse\x12\x1f\n" +
+	"\vcategory_id\x18\x01 \x01(\tR\n" +
+	"categoryId\x12\x18\n" +
+	"\acreated\x18\x02 \x01(\bR\acreated\"^\n" +
+	"\x1cBatchUpsertCategoriesRequest\x12>\n" +
+	"\n" +
+	"categories\x18\x01 \x03(\v2\x1e.product.UpsertCategoryRequestR\n" +
+	"categories\"`\n" +
+	"\x1dBatchUpsertCategoriesResponse\x12?\n" +
+	"\n" +
+	"categories\x18\x01 \x03(\v2\x1f.product.UpsertCategoryResponseR\n" +
+	"categories\"5\n" +
 	"\tFuelInput\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
-	"\x05price\x18\x02 \x01(\x01R\x05price\"Y\n" +
-	"\x10SyncFuelsRequest\x12\x1b\n" +
-	"\tfilial_id\x18\x01 \x01(\tR\bfilialId\x12(\n" +
-	"\x05fuels\x18\x02 \x03(\v2\x12.product.FuelInputR\x05fuels\"n\n" +
-	"\x11SyncFuelsResponse\x12\x18\n" +
-	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessage\x12%\n" +
-	"\x0efuels_upserted\x18\x03 \x01(\x03R\rfuelsUpserted\"=\n" +
+	"\x05price\x18\x02 \x01(\x01R\x05price\"X\n" +
+	"\x11UpsertFuelRequest\x12\x1b\n" +
+	"\tfilial_id\x18\x01 \x01(\tR\bfilialId\x12&\n" +
+	"\x04fuel\x18\x02 \x01(\v2\x12.product.FuelInputR\x04fuel\"G\n" +
+	"\x12UpsertFuelResponse\x12\x17\n" +
+	"\afuel_id\x18\x01 \x01(\tR\x06fuelId\x12\x18\n" +
+	"\acreated\x18\x02 \x01(\bR\acreated\"K\n" +
+	"\x17BatchUpsertFuelsRequest\x120\n" +
+	"\x05fuels\x18\x01 \x03(\v2\x1a.product.UpsertFuelRequestR\x05fuels\"M\n" +
+	"\x18BatchUpsertFuelsResponse\x121\n" +
+	"\x05fuels\x18\x01 \x03(\v2\x1b.product.UpsertFuelResponseR\x05fuels\"=\n" +
 	"\x13ExternalActionInput\x12\x14\n" +
 	"\x05title\x18\x01 \x01(\tR\x05title\x12\x10\n" +
-	"\x03url\x18\x02 \x01(\tR\x03url\"q\n" +
-	"\x1aSyncExternalActionsRequest\x12\x1b\n" +
-	"\tfilial_id\x18\x01 \x01(\tR\bfilialId\x126\n" +
-	"\aactions\x18\x02 \x03(\v2\x1c.product.ExternalActionInputR\aactions\"|\n" +
-	"\x1bSyncExternalActionsResponse\x12\x18\n" +
-	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessage\x12)\n" +
-	"\x10actions_upserted\x18\x03 \x01(\x03R\x0factionsUpserted*^\n" +
-	"\bSyncMode\x12\x19\n" +
-	"\x15SYNC_MODE_UNSPECIFIED\x10\x00\x12\x19\n" +
-	"\x15SYNC_MODE_UPSERT_ONLY\x10\x01\x12\x1c\n" +
-	"\x18SYNC_MODE_REPLACE_SOURCE\x10\x022\x83\x02\n" +
-	"\x0eProductService\x12K\n" +
-	"\fSyncProducts\x12\x1c.product.SyncProductsRequest\x1a\x1d.product.SyncProductsResponse\x12B\n" +
-	"\tSyncFuels\x12\x19.product.SyncFuelsRequest\x1a\x1a.product.SyncFuelsResponse\x12`\n" +
-	"\x13SyncExternalActions\x12#.product.SyncExternalActionsRequest\x1a$.product.SyncExternalActionsResponseBEZCgithub.com/poshagator/content-service/pkg/proto/product/gen;productb\x06proto3"
+	"\x03url\x18\x02 \x01(\tR\x03url\"p\n" +
+	"\x1bUpsertExternalActionRequest\x12\x1b\n" +
+	"\tfilial_id\x18\x01 \x01(\tR\bfilialId\x124\n" +
+	"\x06action\x18\x02 \x01(\v2\x1c.product.ExternalActionInputR\x06action\"U\n" +
+	"\x1cUpsertExternalActionResponse\x12\x1b\n" +
+	"\taction_id\x18\x01 \x01(\tR\bactionId\x12\x18\n" +
+	"\acreated\x18\x02 \x01(\bR\acreated\"c\n" +
+	"!BatchUpsertExternalActionsRequest\x12>\n" +
+	"\aactions\x18\x01 \x03(\v2$.product.UpsertExternalActionRequestR\aactions\"e\n" +
+	"\"BatchUpsertExternalActionsResponse\x12?\n" +
+	"\aactions\x18\x01 \x03(\v2%.product.UpsertExternalActionResponseR\aactions2\xf9\x05\n" +
+	"\x0eProductService\x12N\n" +
+	"\rUpsertProduct\x12\x1d.product.UpsertProductRequest\x1a\x1e.product.UpsertProductResponse\x12`\n" +
+	"\x13BatchUpsertProducts\x12#.product.BatchUpsertProductsRequest\x1a$.product.BatchUpsertProductsResponse\x12Q\n" +
+	"\x0eUpsertCategory\x12\x1e.product.UpsertCategoryRequest\x1a\x1f.product.UpsertCategoryResponse\x12f\n" +
+	"\x15BatchUpsertCategories\x12%.product.BatchUpsertCategoriesRequest\x1a&.product.BatchUpsertCategoriesResponse\x12E\n" +
+	"\n" +
+	"UpsertFuel\x12\x1a.product.UpsertFuelRequest\x1a\x1b.product.UpsertFuelResponse\x12W\n" +
+	"\x10BatchUpsertFuels\x12 .product.BatchUpsertFuelsRequest\x1a!.product.BatchUpsertFuelsResponse\x12c\n" +
+	"\x14UpsertExternalAction\x12$.product.UpsertExternalActionRequest\x1a%.product.UpsertExternalActionResponse\x12u\n" +
+	"\x1aBatchUpsertExternalActions\x12*.product.BatchUpsertExternalActionsRequest\x1a+.product.BatchUpsertExternalActionsResponseBEZCgithub.com/poshagator/content-service/pkg/proto/product/gen;productb\x06proto3"
 
 var (
-	file_pkg_proto_product_product_proto_rawDescOnce sync.Once
-	file_pkg_proto_product_product_proto_rawDescData []byte
+	file_product_proto_rawDescOnce sync.Once
+	file_product_proto_rawDescData []byte
 )
 
-func file_pkg_proto_product_product_proto_rawDescGZIP() []byte {
-	file_pkg_proto_product_product_proto_rawDescOnce.Do(func() {
-		file_pkg_proto_product_product_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_pkg_proto_product_product_proto_rawDesc), len(file_pkg_proto_product_product_proto_rawDesc)))
+func file_product_proto_rawDescGZIP() []byte {
+	file_product_proto_rawDescOnce.Do(func() {
+		file_product_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_product_proto_rawDesc), len(file_product_proto_rawDesc)))
 	})
-	return file_pkg_proto_product_product_proto_rawDescData
+	return file_product_proto_rawDescData
 }
 
-var file_pkg_proto_product_product_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_pkg_proto_product_product_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
-var file_pkg_proto_product_product_proto_goTypes = []any{
-	(SyncMode)(0),                       // 0: product.SyncMode
-	(*SyncProductsRequest)(nil),         // 1: product.SyncProductsRequest
-	(*ProductCategoryInput)(nil),        // 2: product.ProductCategoryInput
-	(*ProductInput)(nil),                // 3: product.ProductInput
-	(*SyncProductsResponse)(nil),        // 4: product.SyncProductsResponse
-	(*FuelInput)(nil),                   // 5: product.FuelInput
-	(*SyncFuelsRequest)(nil),            // 6: product.SyncFuelsRequest
-	(*SyncFuelsResponse)(nil),           // 7: product.SyncFuelsResponse
-	(*ExternalActionInput)(nil),         // 8: product.ExternalActionInput
-	(*SyncExternalActionsRequest)(nil),  // 9: product.SyncExternalActionsRequest
-	(*SyncExternalActionsResponse)(nil), // 10: product.SyncExternalActionsResponse
+var file_product_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
+var file_product_proto_goTypes = []any{
+	(*ProductInput)(nil),                       // 0: product.ProductInput
+	(*UpsertProductRequest)(nil),               // 1: product.UpsertProductRequest
+	(*UpsertProductResponse)(nil),              // 2: product.UpsertProductResponse
+	(*BatchUpsertProductsRequest)(nil),         // 3: product.BatchUpsertProductsRequest
+	(*BatchUpsertProductsResponse)(nil),        // 4: product.BatchUpsertProductsResponse
+	(*CategoryInput)(nil),                      // 5: product.CategoryInput
+	(*UpsertCategoryRequest)(nil),              // 6: product.UpsertCategoryRequest
+	(*UpsertCategoryResponse)(nil),             // 7: product.UpsertCategoryResponse
+	(*BatchUpsertCategoriesRequest)(nil),       // 8: product.BatchUpsertCategoriesRequest
+	(*BatchUpsertCategoriesResponse)(nil),      // 9: product.BatchUpsertCategoriesResponse
+	(*FuelInput)(nil),                          // 10: product.FuelInput
+	(*UpsertFuelRequest)(nil),                  // 11: product.UpsertFuelRequest
+	(*UpsertFuelResponse)(nil),                 // 12: product.UpsertFuelResponse
+	(*BatchUpsertFuelsRequest)(nil),            // 13: product.BatchUpsertFuelsRequest
+	(*BatchUpsertFuelsResponse)(nil),           // 14: product.BatchUpsertFuelsResponse
+	(*ExternalActionInput)(nil),                // 15: product.ExternalActionInput
+	(*UpsertExternalActionRequest)(nil),        // 16: product.UpsertExternalActionRequest
+	(*UpsertExternalActionResponse)(nil),       // 17: product.UpsertExternalActionResponse
+	(*BatchUpsertExternalActionsRequest)(nil),  // 18: product.BatchUpsertExternalActionsRequest
+	(*BatchUpsertExternalActionsResponse)(nil), // 19: product.BatchUpsertExternalActionsResponse
 }
-var file_pkg_proto_product_product_proto_depIdxs = []int32{
-	0,  // 0: product.SyncProductsRequest.mode:type_name -> product.SyncMode
-	2,  // 1: product.SyncProductsRequest.categories:type_name -> product.ProductCategoryInput
-	3,  // 2: product.ProductCategoryInput.products:type_name -> product.ProductInput
-	5,  // 3: product.SyncFuelsRequest.fuels:type_name -> product.FuelInput
-	8,  // 4: product.SyncExternalActionsRequest.actions:type_name -> product.ExternalActionInput
-	1,  // 5: product.ProductService.SyncProducts:input_type -> product.SyncProductsRequest
-	6,  // 6: product.ProductService.SyncFuels:input_type -> product.SyncFuelsRequest
-	9,  // 7: product.ProductService.SyncExternalActions:input_type -> product.SyncExternalActionsRequest
-	4,  // 8: product.ProductService.SyncProducts:output_type -> product.SyncProductsResponse
-	7,  // 9: product.ProductService.SyncFuels:output_type -> product.SyncFuelsResponse
-	10, // 10: product.ProductService.SyncExternalActions:output_type -> product.SyncExternalActionsResponse
-	8,  // [8:11] is the sub-list for method output_type
-	5,  // [5:8] is the sub-list for method input_type
-	5,  // [5:5] is the sub-list for extension type_name
-	5,  // [5:5] is the sub-list for extension extendee
-	0,  // [0:5] is the sub-list for field type_name
+var file_product_proto_depIdxs = []int32{
+	0,  // 0: product.UpsertProductRequest.product:type_name -> product.ProductInput
+	1,  // 1: product.BatchUpsertProductsRequest.products:type_name -> product.UpsertProductRequest
+	2,  // 2: product.BatchUpsertProductsResponse.products:type_name -> product.UpsertProductResponse
+	5,  // 3: product.UpsertCategoryRequest.category:type_name -> product.CategoryInput
+	6,  // 4: product.BatchUpsertCategoriesRequest.categories:type_name -> product.UpsertCategoryRequest
+	7,  // 5: product.BatchUpsertCategoriesResponse.categories:type_name -> product.UpsertCategoryResponse
+	10, // 6: product.UpsertFuelRequest.fuel:type_name -> product.FuelInput
+	11, // 7: product.BatchUpsertFuelsRequest.fuels:type_name -> product.UpsertFuelRequest
+	12, // 8: product.BatchUpsertFuelsResponse.fuels:type_name -> product.UpsertFuelResponse
+	15, // 9: product.UpsertExternalActionRequest.action:type_name -> product.ExternalActionInput
+	16, // 10: product.BatchUpsertExternalActionsRequest.actions:type_name -> product.UpsertExternalActionRequest
+	17, // 11: product.BatchUpsertExternalActionsResponse.actions:type_name -> product.UpsertExternalActionResponse
+	1,  // 12: product.ProductService.UpsertProduct:input_type -> product.UpsertProductRequest
+	3,  // 13: product.ProductService.BatchUpsertProducts:input_type -> product.BatchUpsertProductsRequest
+	6,  // 14: product.ProductService.UpsertCategory:input_type -> product.UpsertCategoryRequest
+	8,  // 15: product.ProductService.BatchUpsertCategories:input_type -> product.BatchUpsertCategoriesRequest
+	11, // 16: product.ProductService.UpsertFuel:input_type -> product.UpsertFuelRequest
+	13, // 17: product.ProductService.BatchUpsertFuels:input_type -> product.BatchUpsertFuelsRequest
+	16, // 18: product.ProductService.UpsertExternalAction:input_type -> product.UpsertExternalActionRequest
+	18, // 19: product.ProductService.BatchUpsertExternalActions:input_type -> product.BatchUpsertExternalActionsRequest
+	2,  // 20: product.ProductService.UpsertProduct:output_type -> product.UpsertProductResponse
+	4,  // 21: product.ProductService.BatchUpsertProducts:output_type -> product.BatchUpsertProductsResponse
+	7,  // 22: product.ProductService.UpsertCategory:output_type -> product.UpsertCategoryResponse
+	9,  // 23: product.ProductService.BatchUpsertCategories:output_type -> product.BatchUpsertCategoriesResponse
+	12, // 24: product.ProductService.UpsertFuel:output_type -> product.UpsertFuelResponse
+	14, // 25: product.ProductService.BatchUpsertFuels:output_type -> product.BatchUpsertFuelsResponse
+	17, // 26: product.ProductService.UpsertExternalAction:output_type -> product.UpsertExternalActionResponse
+	19, // 27: product.ProductService.BatchUpsertExternalActions:output_type -> product.BatchUpsertExternalActionsResponse
+	20, // [20:28] is the sub-list for method output_type
+	12, // [12:20] is the sub-list for method input_type
+	12, // [12:12] is the sub-list for extension type_name
+	12, // [12:12] is the sub-list for extension extendee
+	0,  // [0:12] is the sub-list for field type_name
 }
 
-func init() { file_pkg_proto_product_product_proto_init() }
-func file_pkg_proto_product_product_proto_init() {
-	if File_pkg_proto_product_product_proto != nil {
+func init() { file_product_proto_init() }
+func file_product_proto_init() {
+	if File_product_proto != nil {
 		return
 	}
+	file_product_proto_msgTypes[0].OneofWrappers = []any{}
+	file_product_proto_msgTypes[1].OneofWrappers = []any{}
+	file_product_proto_msgTypes[5].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pkg_proto_product_product_proto_rawDesc), len(file_pkg_proto_product_product_proto_rawDesc)),
-			NumEnums:      1,
-			NumMessages:   10,
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_product_proto_rawDesc), len(file_product_proto_rawDesc)),
+			NumEnums:      0,
+			NumMessages:   20,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_pkg_proto_product_product_proto_goTypes,
-		DependencyIndexes: file_pkg_proto_product_product_proto_depIdxs,
-		EnumInfos:         file_pkg_proto_product_product_proto_enumTypes,
-		MessageInfos:      file_pkg_proto_product_product_proto_msgTypes,
+		GoTypes:           file_product_proto_goTypes,
+		DependencyIndexes: file_product_proto_depIdxs,
+		MessageInfos:      file_product_proto_msgTypes,
 	}.Build()
-	File_pkg_proto_product_product_proto = out.File
-	file_pkg_proto_product_product_proto_goTypes = nil
-	file_pkg_proto_product_product_proto_depIdxs = nil
+	File_product_proto = out.File
+	file_product_proto_goTypes = nil
+	file_product_proto_depIdxs = nil
 }

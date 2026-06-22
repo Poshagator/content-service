@@ -87,41 +87,46 @@ type Product struct {
 	MediaUrls     []string               `db:"media_urls" json:"media_urls"`
 }
 
-type ProductSyncMode string
-
-const (
-	ProductSyncModeUpsertOnly    ProductSyncMode = "upsert_only"
-	ProductSyncModeReplaceSource ProductSyncMode = "replace_source"
-)
-
-type ProductSyncInput struct {
-	FilialID   uuid.UUID             `json:"filial_id"`
-	Source     string                `json:"source"`
-	Mode       ProductSyncMode       `json:"mode"`
-	Categories []ProductSyncCategory `json:"categories"`
+type UpsertProductInput struct {
+	FilialID           uuid.UUID
+	Source             string
+	Product            ProductInput
+	CategoryExternalID *string
+	CategoryName       *string
+	CategoryID         *uuid.UUID
 }
 
-type ProductSyncCategory struct {
-	ExternalID string            `json:"external_id"`
-	Name       string            `json:"name"`
-	PhotoURL   string            `json:"photo_url"`
-	Type       string            `json:"type"`
-	Products   []ProductSyncItem `json:"products"`
-}
-
-type ProductSyncItem struct {
+type ProductInput struct {
 	ExternalID string   `json:"external_id"`
 	Title      string   `json:"title"`
 	Body       string   `json:"body"`
 	BasePrice  float64  `json:"base_price"`
-	Price      string   `json:"price"`
 	Currency   string   `json:"currency"`
 	Weight     string   `json:"weight"`
 	Volume     string   `json:"volume"`
 	Status     *bool    `json:"status"`
-	PhotoURL   string   `json:"photo_url"`
-	PhotoLink  string   `json:"photo_link"`
 	MediaUrls  []string `json:"media_urls"`
+}
+
+type UpsertCategoryInput struct {
+	FilialID uuid.UUID
+	Source   string
+	Category CategoryInput
+}
+
+type CategoryInput struct {
+	ExternalID string  `json:"external_id"`
+	Name       string  `json:"name"`
+	PhotoURL   *string `json:"photo_url"`
+	Type       *string `json:"type"`
+}
+
+type BatchUpsertProductsInput struct {
+	Products []UpsertProductInput
+}
+
+type BatchUpsertCategoriesInput struct {
+	Categories []UpsertCategoryInput
 }
 
 type ProductSyncStats struct {

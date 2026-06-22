@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.2.0
 // - protoc             v6.33.4
-// source: pkg/proto/product/product.proto
+// source: product.proto
 
 package product
 
@@ -22,9 +22,14 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ProductServiceClient interface {
-	SyncProducts(ctx context.Context, in *SyncProductsRequest, opts ...grpc.CallOption) (*SyncProductsResponse, error)
-	SyncFuels(ctx context.Context, in *SyncFuelsRequest, opts ...grpc.CallOption) (*SyncFuelsResponse, error)
-	SyncExternalActions(ctx context.Context, in *SyncExternalActionsRequest, opts ...grpc.CallOption) (*SyncExternalActionsResponse, error)
+	UpsertProduct(ctx context.Context, in *UpsertProductRequest, opts ...grpc.CallOption) (*UpsertProductResponse, error)
+	BatchUpsertProducts(ctx context.Context, in *BatchUpsertProductsRequest, opts ...grpc.CallOption) (*BatchUpsertProductsResponse, error)
+	UpsertCategory(ctx context.Context, in *UpsertCategoryRequest, opts ...grpc.CallOption) (*UpsertCategoryResponse, error)
+	BatchUpsertCategories(ctx context.Context, in *BatchUpsertCategoriesRequest, opts ...grpc.CallOption) (*BatchUpsertCategoriesResponse, error)
+	UpsertFuel(ctx context.Context, in *UpsertFuelRequest, opts ...grpc.CallOption) (*UpsertFuelResponse, error)
+	BatchUpsertFuels(ctx context.Context, in *BatchUpsertFuelsRequest, opts ...grpc.CallOption) (*BatchUpsertFuelsResponse, error)
+	UpsertExternalAction(ctx context.Context, in *UpsertExternalActionRequest, opts ...grpc.CallOption) (*UpsertExternalActionResponse, error)
+	BatchUpsertExternalActions(ctx context.Context, in *BatchUpsertExternalActionsRequest, opts ...grpc.CallOption) (*BatchUpsertExternalActionsResponse, error)
 }
 
 type productServiceClient struct {
@@ -35,27 +40,72 @@ func NewProductServiceClient(cc grpc.ClientConnInterface) ProductServiceClient {
 	return &productServiceClient{cc}
 }
 
-func (c *productServiceClient) SyncProducts(ctx context.Context, in *SyncProductsRequest, opts ...grpc.CallOption) (*SyncProductsResponse, error) {
-	out := new(SyncProductsResponse)
-	err := c.cc.Invoke(ctx, "/product.ProductService/SyncProducts", in, out, opts...)
+func (c *productServiceClient) UpsertProduct(ctx context.Context, in *UpsertProductRequest, opts ...grpc.CallOption) (*UpsertProductResponse, error) {
+	out := new(UpsertProductResponse)
+	err := c.cc.Invoke(ctx, "/product.ProductService/UpsertProduct", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *productServiceClient) SyncFuels(ctx context.Context, in *SyncFuelsRequest, opts ...grpc.CallOption) (*SyncFuelsResponse, error) {
-	out := new(SyncFuelsResponse)
-	err := c.cc.Invoke(ctx, "/product.ProductService/SyncFuels", in, out, opts...)
+func (c *productServiceClient) BatchUpsertProducts(ctx context.Context, in *BatchUpsertProductsRequest, opts ...grpc.CallOption) (*BatchUpsertProductsResponse, error) {
+	out := new(BatchUpsertProductsResponse)
+	err := c.cc.Invoke(ctx, "/product.ProductService/BatchUpsertProducts", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *productServiceClient) SyncExternalActions(ctx context.Context, in *SyncExternalActionsRequest, opts ...grpc.CallOption) (*SyncExternalActionsResponse, error) {
-	out := new(SyncExternalActionsResponse)
-	err := c.cc.Invoke(ctx, "/product.ProductService/SyncExternalActions", in, out, opts...)
+func (c *productServiceClient) UpsertCategory(ctx context.Context, in *UpsertCategoryRequest, opts ...grpc.CallOption) (*UpsertCategoryResponse, error) {
+	out := new(UpsertCategoryResponse)
+	err := c.cc.Invoke(ctx, "/product.ProductService/UpsertCategory", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *productServiceClient) BatchUpsertCategories(ctx context.Context, in *BatchUpsertCategoriesRequest, opts ...grpc.CallOption) (*BatchUpsertCategoriesResponse, error) {
+	out := new(BatchUpsertCategoriesResponse)
+	err := c.cc.Invoke(ctx, "/product.ProductService/BatchUpsertCategories", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *productServiceClient) UpsertFuel(ctx context.Context, in *UpsertFuelRequest, opts ...grpc.CallOption) (*UpsertFuelResponse, error) {
+	out := new(UpsertFuelResponse)
+	err := c.cc.Invoke(ctx, "/product.ProductService/UpsertFuel", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *productServiceClient) BatchUpsertFuels(ctx context.Context, in *BatchUpsertFuelsRequest, opts ...grpc.CallOption) (*BatchUpsertFuelsResponse, error) {
+	out := new(BatchUpsertFuelsResponse)
+	err := c.cc.Invoke(ctx, "/product.ProductService/BatchUpsertFuels", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *productServiceClient) UpsertExternalAction(ctx context.Context, in *UpsertExternalActionRequest, opts ...grpc.CallOption) (*UpsertExternalActionResponse, error) {
+	out := new(UpsertExternalActionResponse)
+	err := c.cc.Invoke(ctx, "/product.ProductService/UpsertExternalAction", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *productServiceClient) BatchUpsertExternalActions(ctx context.Context, in *BatchUpsertExternalActionsRequest, opts ...grpc.CallOption) (*BatchUpsertExternalActionsResponse, error) {
+	out := new(BatchUpsertExternalActionsResponse)
+	err := c.cc.Invoke(ctx, "/product.ProductService/BatchUpsertExternalActions", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -66,9 +116,14 @@ func (c *productServiceClient) SyncExternalActions(ctx context.Context, in *Sync
 // All implementations must embed UnimplementedProductServiceServer
 // for forward compatibility
 type ProductServiceServer interface {
-	SyncProducts(context.Context, *SyncProductsRequest) (*SyncProductsResponse, error)
-	SyncFuels(context.Context, *SyncFuelsRequest) (*SyncFuelsResponse, error)
-	SyncExternalActions(context.Context, *SyncExternalActionsRequest) (*SyncExternalActionsResponse, error)
+	UpsertProduct(context.Context, *UpsertProductRequest) (*UpsertProductResponse, error)
+	BatchUpsertProducts(context.Context, *BatchUpsertProductsRequest) (*BatchUpsertProductsResponse, error)
+	UpsertCategory(context.Context, *UpsertCategoryRequest) (*UpsertCategoryResponse, error)
+	BatchUpsertCategories(context.Context, *BatchUpsertCategoriesRequest) (*BatchUpsertCategoriesResponse, error)
+	UpsertFuel(context.Context, *UpsertFuelRequest) (*UpsertFuelResponse, error)
+	BatchUpsertFuels(context.Context, *BatchUpsertFuelsRequest) (*BatchUpsertFuelsResponse, error)
+	UpsertExternalAction(context.Context, *UpsertExternalActionRequest) (*UpsertExternalActionResponse, error)
+	BatchUpsertExternalActions(context.Context, *BatchUpsertExternalActionsRequest) (*BatchUpsertExternalActionsResponse, error)
 	mustEmbedUnimplementedProductServiceServer()
 }
 
@@ -76,14 +131,29 @@ type ProductServiceServer interface {
 type UnimplementedProductServiceServer struct {
 }
 
-func (UnimplementedProductServiceServer) SyncProducts(context.Context, *SyncProductsRequest) (*SyncProductsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SyncProducts not implemented")
+func (UnimplementedProductServiceServer) UpsertProduct(context.Context, *UpsertProductRequest) (*UpsertProductResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpsertProduct not implemented")
 }
-func (UnimplementedProductServiceServer) SyncFuels(context.Context, *SyncFuelsRequest) (*SyncFuelsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SyncFuels not implemented")
+func (UnimplementedProductServiceServer) BatchUpsertProducts(context.Context, *BatchUpsertProductsRequest) (*BatchUpsertProductsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method BatchUpsertProducts not implemented")
 }
-func (UnimplementedProductServiceServer) SyncExternalActions(context.Context, *SyncExternalActionsRequest) (*SyncExternalActionsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SyncExternalActions not implemented")
+func (UnimplementedProductServiceServer) UpsertCategory(context.Context, *UpsertCategoryRequest) (*UpsertCategoryResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpsertCategory not implemented")
+}
+func (UnimplementedProductServiceServer) BatchUpsertCategories(context.Context, *BatchUpsertCategoriesRequest) (*BatchUpsertCategoriesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method BatchUpsertCategories not implemented")
+}
+func (UnimplementedProductServiceServer) UpsertFuel(context.Context, *UpsertFuelRequest) (*UpsertFuelResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpsertFuel not implemented")
+}
+func (UnimplementedProductServiceServer) BatchUpsertFuels(context.Context, *BatchUpsertFuelsRequest) (*BatchUpsertFuelsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method BatchUpsertFuels not implemented")
+}
+func (UnimplementedProductServiceServer) UpsertExternalAction(context.Context, *UpsertExternalActionRequest) (*UpsertExternalActionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpsertExternalAction not implemented")
+}
+func (UnimplementedProductServiceServer) BatchUpsertExternalActions(context.Context, *BatchUpsertExternalActionsRequest) (*BatchUpsertExternalActionsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method BatchUpsertExternalActions not implemented")
 }
 func (UnimplementedProductServiceServer) mustEmbedUnimplementedProductServiceServer() {}
 
@@ -98,56 +168,146 @@ func RegisterProductServiceServer(s grpc.ServiceRegistrar, srv ProductServiceSer
 	s.RegisterService(&ProductService_ServiceDesc, srv)
 }
 
-func _ProductService_SyncProducts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SyncProductsRequest)
+func _ProductService_UpsertProduct_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpsertProductRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ProductServiceServer).SyncProducts(ctx, in)
+		return srv.(ProductServiceServer).UpsertProduct(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/product.ProductService/SyncProducts",
+		FullMethod: "/product.ProductService/UpsertProduct",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProductServiceServer).SyncProducts(ctx, req.(*SyncProductsRequest))
+		return srv.(ProductServiceServer).UpsertProduct(ctx, req.(*UpsertProductRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ProductService_SyncFuels_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SyncFuelsRequest)
+func _ProductService_BatchUpsertProducts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BatchUpsertProductsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ProductServiceServer).SyncFuels(ctx, in)
+		return srv.(ProductServiceServer).BatchUpsertProducts(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/product.ProductService/SyncFuels",
+		FullMethod: "/product.ProductService/BatchUpsertProducts",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProductServiceServer).SyncFuels(ctx, req.(*SyncFuelsRequest))
+		return srv.(ProductServiceServer).BatchUpsertProducts(ctx, req.(*BatchUpsertProductsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ProductService_SyncExternalActions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SyncExternalActionsRequest)
+func _ProductService_UpsertCategory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpsertCategoryRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ProductServiceServer).SyncExternalActions(ctx, in)
+		return srv.(ProductServiceServer).UpsertCategory(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/product.ProductService/SyncExternalActions",
+		FullMethod: "/product.ProductService/UpsertCategory",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProductServiceServer).SyncExternalActions(ctx, req.(*SyncExternalActionsRequest))
+		return srv.(ProductServiceServer).UpsertCategory(ctx, req.(*UpsertCategoryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ProductService_BatchUpsertCategories_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BatchUpsertCategoriesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProductServiceServer).BatchUpsertCategories(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/product.ProductService/BatchUpsertCategories",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProductServiceServer).BatchUpsertCategories(ctx, req.(*BatchUpsertCategoriesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ProductService_UpsertFuel_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpsertFuelRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProductServiceServer).UpsertFuel(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/product.ProductService/UpsertFuel",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProductServiceServer).UpsertFuel(ctx, req.(*UpsertFuelRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ProductService_BatchUpsertFuels_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BatchUpsertFuelsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProductServiceServer).BatchUpsertFuels(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/product.ProductService/BatchUpsertFuels",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProductServiceServer).BatchUpsertFuels(ctx, req.(*BatchUpsertFuelsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ProductService_UpsertExternalAction_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpsertExternalActionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProductServiceServer).UpsertExternalAction(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/product.ProductService/UpsertExternalAction",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProductServiceServer).UpsertExternalAction(ctx, req.(*UpsertExternalActionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ProductService_BatchUpsertExternalActions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BatchUpsertExternalActionsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProductServiceServer).BatchUpsertExternalActions(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/product.ProductService/BatchUpsertExternalActions",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProductServiceServer).BatchUpsertExternalActions(ctx, req.(*BatchUpsertExternalActionsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -160,18 +320,38 @@ var ProductService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*ProductServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "SyncProducts",
-			Handler:    _ProductService_SyncProducts_Handler,
+			MethodName: "UpsertProduct",
+			Handler:    _ProductService_UpsertProduct_Handler,
 		},
 		{
-			MethodName: "SyncFuels",
-			Handler:    _ProductService_SyncFuels_Handler,
+			MethodName: "BatchUpsertProducts",
+			Handler:    _ProductService_BatchUpsertProducts_Handler,
 		},
 		{
-			MethodName: "SyncExternalActions",
-			Handler:    _ProductService_SyncExternalActions_Handler,
+			MethodName: "UpsertCategory",
+			Handler:    _ProductService_UpsertCategory_Handler,
+		},
+		{
+			MethodName: "BatchUpsertCategories",
+			Handler:    _ProductService_BatchUpsertCategories_Handler,
+		},
+		{
+			MethodName: "UpsertFuel",
+			Handler:    _ProductService_UpsertFuel_Handler,
+		},
+		{
+			MethodName: "BatchUpsertFuels",
+			Handler:    _ProductService_BatchUpsertFuels_Handler,
+		},
+		{
+			MethodName: "UpsertExternalAction",
+			Handler:    _ProductService_UpsertExternalAction_Handler,
+		},
+		{
+			MethodName: "BatchUpsertExternalActions",
+			Handler:    _ProductService_BatchUpsertExternalActions_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "pkg/proto/product/product.proto",
+	Metadata: "product.proto",
 }

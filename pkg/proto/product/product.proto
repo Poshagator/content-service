@@ -5,33 +5,20 @@ package product;
 option go_package = "github.com/poshagator/content-service/pkg/proto/product/gen;product";
 
 service ProductService {
-  rpc SyncProducts(SyncProductsRequest) returns (SyncProductsResponse);
-  rpc SyncFuels(SyncFuelsRequest) returns (SyncFuelsResponse);
-  rpc SyncExternalActions(SyncExternalActionsRequest) returns (SyncExternalActionsResponse);
+  rpc UpsertProduct(UpsertProductRequest) returns (UpsertProductResponse);
+  rpc BatchUpsertProducts(BatchUpsertProductsRequest) returns (BatchUpsertProductsResponse);
+
+  rpc UpsertCategory(UpsertCategoryRequest) returns (UpsertCategoryResponse);
+  rpc BatchUpsertCategories(BatchUpsertCategoriesRequest) returns (BatchUpsertCategoriesResponse);
+
+  rpc UpsertFuel(UpsertFuelRequest) returns (UpsertFuelResponse);
+  rpc BatchUpsertFuels(BatchUpsertFuelsRequest) returns (BatchUpsertFuelsResponse);
+
+  rpc UpsertExternalAction(UpsertExternalActionRequest) returns (UpsertExternalActionResponse);
+  rpc BatchUpsertExternalActions(BatchUpsertExternalActionsRequest) returns (BatchUpsertExternalActionsResponse);
 }
 
-enum SyncMode {
-  SYNC_MODE_UNSPECIFIED = 0;
-  SYNC_MODE_UPSERT_ONLY = 1;
-  SYNC_MODE_REPLACE_SOURCE = 2;
-}
-
-message SyncProductsRequest {
-  string filial_id = 1;
-  string external_filial_id = 2;
-  string source = 3;
-  SyncMode mode = 4;
-  repeated ProductCategoryInput categories = 5;
-  string payload_json = 6;
-}
-
-message ProductCategoryInput {
-  string external_id = 1;
-  string name = 2;
-  string photo_url = 3;
-  string type = 4;
-  repeated ProductInput products = 5;
-}
+// ======================= Products =======================
 
 message ProductInput {
   string external_id = 1;
@@ -40,46 +27,108 @@ message ProductInput {
   double base_price = 4;
   string currency = 5;
   string weight = 6;
-  bool status = 7;
-  repeated string media_urls = 8;
+  string volume = 7;
+  optional bool status = 8;
+  repeated string media_urls = 9;
 }
 
-message SyncProductsResponse {
-  bool success = 1;
-  string message = 2;
-  int64 categories_upserted = 3;
-  int64 products_upserted = 4;
-  int64 products_disabled = 5;
+message UpsertProductRequest {
+  string filial_id = 1;
+  string source = 2;
+  ProductInput product = 3;
+
+  optional string category_id = 4;
+  optional string category_external_id = 5;
+  optional string category_name = 6;
 }
+
+message UpsertProductResponse {
+  string product_id = 1;
+  bool created = 2;
+}
+
+message BatchUpsertProductsRequest {
+  repeated UpsertProductRequest products = 1;
+}
+
+message BatchUpsertProductsResponse {
+  repeated UpsertProductResponse products = 1;
+}
+
+// ======================= Categories =======================
+
+message CategoryInput {
+  string external_id = 1;
+  string name = 2;
+  optional string photo_url = 3;
+  optional string type = 4;
+}
+
+message UpsertCategoryRequest {
+  string filial_id = 1;
+  string source = 2;
+  CategoryInput category = 3;
+}
+
+message UpsertCategoryResponse {
+  string category_id = 1;
+  bool created = 2;
+}
+
+message BatchUpsertCategoriesRequest {
+  repeated UpsertCategoryRequest categories = 1;
+}
+
+message BatchUpsertCategoriesResponse {
+  repeated UpsertCategoryResponse categories = 1;
+}
+
+// ======================= Fuels =======================
 
 message FuelInput {
   string name = 1;
   double price = 2;
 }
 
-message SyncFuelsRequest {
+message UpsertFuelRequest {
   string filial_id = 1;
-  repeated FuelInput fuels = 2;
+  FuelInput fuel = 2;
 }
 
-message SyncFuelsResponse {
-  bool success = 1;
-  string message = 2;
-  int64 fuels_upserted = 3;
+message UpsertFuelResponse {
+  string fuel_id = 1;
+  bool created = 2;
 }
+
+message BatchUpsertFuelsRequest {
+  repeated UpsertFuelRequest fuels = 1;
+}
+
+message BatchUpsertFuelsResponse {
+  repeated UpsertFuelResponse fuels = 1;
+}
+
+// ======================= External Actions =======================
 
 message ExternalActionInput {
   string title = 1;
   string url = 2;
 }
 
-message SyncExternalActionsRequest {
+message UpsertExternalActionRequest {
   string filial_id = 1;
-  repeated ExternalActionInput actions = 2;
+  ExternalActionInput action = 2;
 }
 
-message SyncExternalActionsResponse {
-  bool success = 1;
-  string message = 2;
-  int64 actions_upserted = 3;
+message UpsertExternalActionResponse {
+  string action_id = 1;
+  bool created = 2;
+}
+
+message BatchUpsertExternalActionsRequest {
+  repeated UpsertExternalActionRequest actions = 1;
+}
+
+message BatchUpsertExternalActionsResponse {
+  repeated UpsertExternalActionResponse actions = 1;
 }

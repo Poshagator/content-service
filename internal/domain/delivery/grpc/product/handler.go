@@ -2,19 +2,18 @@ package product
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"strings"
 
 	"github.com/google/uuid"
+	"go.uber.org/zap"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
 	entity "github.com/poshagator/content-service/internal/domain/entities/product"
 	ucaction "github.com/poshagator/content-service/internal/domain/usecase/action"
 	ucfuel "github.com/poshagator/content-service/internal/domain/usecase/fuel"
 	ucproduct "github.com/poshagator/content-service/internal/domain/usecase/product"
 	productpb "github.com/poshagator/content-service/pkg/proto/product/gen"
-	"go.uber.org/zap"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 type Handler struct {
@@ -34,128 +33,189 @@ func NewHandler(log *zap.Logger, usecase *ucproduct.Usecase, actionUC *ucaction.
 	}
 }
 
-func (h *Handler) SyncProducts(ctx context.Context, req *productpb.SyncProductsRequest) (*productpb.SyncProductsResponse, error) {
-	filialID, err := parseFilialID(req.GetFilialId(), req.GetExternalFilialId())
+// ======================= Products =======================
+
+func (h *Handler) UpsertProduct(ctx context.Context, req *productpb.UpsertProductRequest) (*productpb.UpsertProductResponse, error) {
+	if req == nil || req.Product == nil {
+		return nil, status.Error(codes.InvalidArgument, "request and product cannot be nil")
+	}
+
+	in, err := mapUpsertProductRequest(req)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	input := entity.ProductSyncInput{
-		FilialID: filialID,
-		Source:   strings.TrimSpace(req.GetSource()),
-		Mode:     syncMode(req.GetMode()),
-	}
-	if req.GetPayloadJson() != "" {
-		if err = json.Unmarshal([]byte(req.GetPayloadJson()), &input); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "invalid payload_json: %v", err)
-		}
-		input.FilialID = filialID
-		if strings.TrimSpace(req.GetSource()) != "" {
-			input.Source = strings.TrimSpace(req.GetSource())
-		}
-		if req.GetMode() != productpb.SyncMode_SYNC_MODE_UNSPECIFIED {
-			input.Mode = syncMode(req.GetMode())
-		}
-		if err = applyPayloadAliases(req.GetPayloadJson(), &input); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "invalid payload_json aliases: %v", err)
-		}
-	} else {
-		input.Categories = categoriesFromProto(req.GetCategories())
-	}
-
-	stats, err := h.usecase.SyncProducts(ctx, input)
+	id, created, err := h.usecase.UpsertProduct(ctx, in)
 	if err != nil {
-		h.log.Error("sync products failed", zap.String("filial_id", filialID.String()), zap.String("source", req.GetSource()), zap.Error(err))
-		return nil, status.Errorf(codes.Internal, "sync products failed: %v", err)
+		h.log.Error("UpsertProduct failed", zap.Error(err))
+		return nil, status.Errorf(codes.Internal, "UpsertProduct failed: %v", err)
 	}
 
-	return &productpb.SyncProductsResponse{
-		Success:            true,
-		Message:            "products synced",
-		CategoriesUpserted: stats.CategoriesUpserted,
-		ProductsUpserted:   stats.ProductsUpserted,
-		ProductsDisabled:   stats.ProductsDisabled,
+	return &productpb.UpsertProductResponse{
+		ProductId: id.String(),
+		Created:   created,
 	}, nil
 }
 
-func parseFilialID(filialID, externalFilialID string) (uuid.UUID, error) {
-	raw := strings.TrimSpace(filialID)
-	if raw == "" {
-		raw = strings.TrimSpace(externalFilialID)
+func (h *Handler) BatchUpsertProducts(ctx context.Context, req *productpb.BatchUpsertProductsRequest) (*productpb.BatchUpsertProductsResponse, error) {
+	if req == nil || len(req.Products) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "empty products list")
 	}
-	if raw == "" {
-		return uuid.Nil, fmt.Errorf("filial_id required")
+
+	var inputs []entity.UpsertProductInput
+	for _, p := range req.Products {
+		in, err := mapUpsertProductRequest(p)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "invalid product %v: %v", p.Product.ExternalId, err)
+		}
+		inputs = append(inputs, in)
 	}
-	parsed, err := uuid.Parse(raw)
+
+	ids, err := h.usecase.BatchUpsertProducts(ctx, entity.BatchUpsertProductsInput{Products: inputs})
 	if err != nil {
-		return uuid.Nil, fmt.Errorf("filial_id/external_filial_id must be UUID: %w", err)
+		h.log.Error("BatchUpsertProducts failed", zap.Error(err))
+		return nil, status.Errorf(codes.Internal, "BatchUpsertProducts failed: %v", err)
 	}
-	return parsed, nil
+
+	resp := &productpb.BatchUpsertProductsResponse{}
+	for _, id := range ids {
+		resp.Products = append(resp.Products, &productpb.UpsertProductResponse{
+			ProductId: id.String(),
+			// In batch we don't return 'created' accurately right now for simplicity, or we could if usecase returns it.
+			Created:   false,
+		})
+	}
+	return resp, nil
 }
 
-func syncMode(mode productpb.SyncMode) entity.ProductSyncMode {
-	if mode == productpb.SyncMode_SYNC_MODE_REPLACE_SOURCE {
-		return entity.ProductSyncModeReplaceSource
+// ======================= Categories =======================
+
+func (h *Handler) UpsertCategory(ctx context.Context, req *productpb.UpsertCategoryRequest) (*productpb.UpsertCategoryResponse, error) {
+	if req == nil || req.Category == nil {
+		return nil, status.Error(codes.InvalidArgument, "request and category cannot be nil")
 	}
-	return entity.ProductSyncModeUpsertOnly
+
+	in, err := mapUpsertCategoryRequest(req)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	id, created, err := h.usecase.UpsertCategory(ctx, in)
+	if err != nil {
+		h.log.Error("UpsertCategory failed", zap.Error(err))
+		return nil, status.Errorf(codes.Internal, "UpsertCategory failed: %v", err)
+	}
+
+	return &productpb.UpsertCategoryResponse{
+		CategoryId: id.String(),
+		Created:    created,
+	}, nil
 }
 
-func categoriesFromProto(categories []*productpb.ProductCategoryInput) []entity.ProductSyncCategory {
-	out := make([]entity.ProductSyncCategory, 0, len(categories))
-	for _, category := range categories {
-		c := entity.ProductSyncCategory{
-			ExternalID: category.GetExternalId(),
-			Name:       category.GetName(),
-			PhotoURL:   category.GetPhotoUrl(),
-			Type:       category.GetType(),
-			Products:   make([]entity.ProductSyncItem, 0, len(category.GetProducts())),
-		}
-		for _, product := range category.GetProducts() {
-			statusValue := product.GetStatus()
-			c.Products = append(c.Products, entity.ProductSyncItem{
-				ExternalID: product.GetExternalId(),
-				Title:      product.GetTitle(),
-				Body:       product.GetBody(),
-				BasePrice:  product.GetBasePrice(),
-				Currency:   product.GetCurrency(),
-				Weight:     product.GetWeight(),
-				Status:     &statusValue,
-				MediaUrls:  product.GetMediaUrls(),
-			})
-		}
-		out = append(out, c)
+func (h *Handler) BatchUpsertCategories(ctx context.Context, req *productpb.BatchUpsertCategoriesRequest) (*productpb.BatchUpsertCategoriesResponse, error) {
+	if req == nil || len(req.Categories) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "empty categories list")
 	}
-	return out
+
+	var inputs []entity.UpsertCategoryInput
+	for _, c := range req.Categories {
+		in, err := mapUpsertCategoryRequest(c)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "invalid category: %v", err)
+		}
+		inputs = append(inputs, in)
+	}
+
+	ids, err := h.usecase.BatchUpsertCategories(ctx, entity.BatchUpsertCategoriesInput{Categories: inputs})
+	if err != nil {
+		h.log.Error("BatchUpsertCategories failed", zap.Error(err))
+		return nil, status.Errorf(codes.Internal, "BatchUpsertCategories failed: %v", err)
+	}
+
+	resp := &productpb.BatchUpsertCategoriesResponse{}
+	for _, id := range ids {
+		resp.Categories = append(resp.Categories, &productpb.UpsertCategoryResponse{
+			CategoryId: id.String(),
+			Created:    false,
+		})
+	}
+	return resp, nil
 }
 
-func applyPayloadAliases(raw string, input *entity.ProductSyncInput) error {
-	var payload struct {
-		Categories []struct {
-			entity.ProductSyncCategory
-			Items []entity.ProductSyncItem `json:"items"`
-		} `json:"categories"`
-		Items []struct {
-			entity.ProductSyncCategory
-			Items []entity.ProductSyncItem `json:"items"`
-		} `json:"items"`
+// ======================= Fuels & Actions =======================
+
+func (h *Handler) UpsertFuel(ctx context.Context, req *productpb.UpsertFuelRequest) (*productpb.UpsertFuelResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "unimplemented")
+}
+
+func (h *Handler) BatchUpsertFuels(ctx context.Context, req *productpb.BatchUpsertFuelsRequest) (*productpb.BatchUpsertFuelsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "unimplemented")
+}
+
+func (h *Handler) UpsertExternalAction(ctx context.Context, req *productpb.UpsertExternalActionRequest) (*productpb.UpsertExternalActionResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "unimplemented")
+}
+
+func (h *Handler) BatchUpsertExternalActions(ctx context.Context, req *productpb.BatchUpsertExternalActionsRequest) (*productpb.BatchUpsertExternalActionsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "unimplemented")
+}
+
+// ======================= Mappers =======================
+
+func mapUpsertProductRequest(req *productpb.UpsertProductRequest) (entity.UpsertProductInput, error) {
+	filialID, err := uuid.Parse(req.FilialId)
+	if err != nil {
+		return entity.UpsertProductInput{}, fmt.Errorf("invalid filial_id: %v", err)
 	}
-	if err := json.Unmarshal([]byte(raw), &payload); err != nil {
-		return err
-	}
-	categories := payload.Categories
-	if len(categories) == 0 {
-		categories = payload.Items
-	}
-	if len(categories) == 0 {
-		return nil
-	}
-	input.Categories = make([]entity.ProductSyncCategory, 0, len(categories))
-	for _, category := range categories {
-		c := category.ProductSyncCategory
-		if len(c.Products) == 0 {
-			c.Products = category.Items
+	
+	var catID *uuid.UUID
+	if req.CategoryId != nil && *req.CategoryId != "" {
+		id, err := uuid.Parse(*req.CategoryId)
+		if err == nil {
+			catID = &id
 		}
-		input.Categories = append(input.Categories, c)
 	}
-	return nil
+	
+	var statusVal *bool
+	if req.Product.Status != nil {
+		b := *req.Product.Status
+		statusVal = &b
+	}
+
+	return entity.UpsertProductInput{
+		FilialID: filialID,
+		Source:   req.Source,
+		Product: entity.ProductInput{
+			ExternalID: req.Product.ExternalId,
+			Title:      req.Product.Title,
+			Body:       req.Product.Body,
+			BasePrice:  req.Product.BasePrice,
+			Currency:   req.Product.Currency,
+			Weight:     req.Product.Weight,
+			Volume:     req.Product.Volume,
+			Status:     statusVal,
+			MediaUrls:  req.Product.MediaUrls,
+		},
+		CategoryExternalID: req.CategoryExternalId,
+		CategoryName:       req.CategoryName,
+		CategoryID:         catID,
+	}, nil
+}
+
+func mapUpsertCategoryRequest(req *productpb.UpsertCategoryRequest) (entity.UpsertCategoryInput, error) {
+	filialID, err := uuid.Parse(req.FilialId)
+	if err != nil {
+		return entity.UpsertCategoryInput{}, fmt.Errorf("invalid filial_id: %v", err)
+	}
+
+	return entity.UpsertCategoryInput{
+		FilialID: filialID,
+		Source:   req.Source,
+		Category: entity.CategoryInput{
+			ExternalID: req.Category.ExternalId,
+			Name:       req.Category.Name,
+			PhotoURL:   req.Category.PhotoUrl,
+			Type:       req.Category.Type,
+		},
+	}, nil
 }
