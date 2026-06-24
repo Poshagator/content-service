@@ -247,6 +247,11 @@ WHERE id = $1;
 	err = tx.QueryRow(ctx, `
 INSERT INTO public.product_category (filial_id, name, photo_url, source, external_id)
 VALUES ($1, $2, NULLIF($3, ''), $4, NULLIF($5, ''))
+ON CONFLICT (filial_id, name) DO UPDATE
+SET photo_url = COALESCE(EXCLUDED.photo_url, public.product_category.photo_url),
+    source = COALESCE(public.product_category.source, EXCLUDED.source),
+    external_id = COALESCE(public.product_category.external_id, EXCLUDED.external_id),
+    updated_at = now()
 RETURNING id;
 `, filialID, category.Name, photoURL, source, category.ExternalID).Scan(&id)
 	return id, err
