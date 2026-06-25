@@ -42,4 +42,6 @@ func (s *Server) createController() {
 func (s *Server) createFilialController() {
 	filial := s.serv.Group("/content/filial")
 	filial.GET("/features", s.filialHandler.GetFilialFeatures)
+	filial.GET("/fuels", s.filialHandler.GetFuels)
+	filial.GET("/actions", s.filialHandler.GetExternalActions)
 }
