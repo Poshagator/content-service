@@ -9,6 +9,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	actionEnt "github.com/poshagator/content-service/internal/domain/entities/action"
+	fuelEnt "github.com/poshagator/content-service/internal/domain/entities/fuel"
 	entity "github.com/poshagator/content-service/internal/domain/entities/product"
 	ucaction "github.com/poshagator/content-service/internal/domain/usecase/action"
 	ucfuel "github.com/poshagator/content-service/internal/domain/usecase/fuel"
@@ -149,7 +151,40 @@ func (h *Handler) UpsertFuel(ctx context.Context, req *productpb.UpsertFuelReque
 }
 
 func (h *Handler) BatchUpsertFuels(ctx context.Context, req *productpb.BatchUpsertFuelsRequest) (*productpb.BatchUpsertFuelsResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "unimplemented")
+	if req == nil || len(req.Fuels) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "empty fuels list")
+	}
+
+	filialMap := make(map[uuid.UUID][]fuelEnt.Fuel)
+	for _, fReq := range req.Fuels {
+		filialID, err := uuid.Parse(fReq.FilialId)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "invalid filial_id: %v", err)
+		}
+		
+		f := fuelEnt.Fuel{
+			Name:  fReq.Fuel.Name,
+			Price: fReq.Fuel.Price,
+		}
+		filialMap[filialID] = append(filialMap[filialID], f)
+	}
+
+	resp := &productpb.BatchUpsertFuelsResponse{}
+	for filialID, fuels := range filialMap {
+		_, err := h.fuelUC.SyncFuels(ctx, filialID, fuels)
+		if err != nil {
+			h.log.Error("SyncFuels failed", zap.Error(err))
+			return nil, status.Errorf(codes.Internal, "SyncFuels failed: %v", err)
+		}
+		for range fuels {
+			resp.Fuels = append(resp.Fuels, &productpb.UpsertFuelResponse{
+				FuelId:  uuid.New().String(),
+				Created: true,
+			})
+		}
+	}
+	
+	return resp, nil
 }
 
 func (h *Handler) UpsertExternalAction(ctx context.Context, req *productpb.UpsertExternalActionRequest) (*productpb.UpsertExternalActionResponse, error) {
@@ -157,7 +192,40 @@ func (h *Handler) UpsertExternalAction(ctx context.Context, req *productpb.Upser
 }
 
 func (h *Handler) BatchUpsertExternalActions(ctx context.Context, req *productpb.BatchUpsertExternalActionsRequest) (*productpb.BatchUpsertExternalActionsResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "unimplemented")
+	if req == nil || len(req.Actions) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "empty actions list")
+	}
+
+	filialMap := make(map[uuid.UUID][]actionEnt.ExternalAction)
+	for _, aReq := range req.Actions {
+		filialID, err := uuid.Parse(aReq.FilialId)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "invalid filial_id: %v", err)
+		}
+		
+		a := actionEnt.ExternalAction{
+			Title: aReq.Action.Title,
+			URL:   aReq.Action.Url,
+		}
+		filialMap[filialID] = append(filialMap[filialID], a)
+	}
+
+	resp := &productpb.BatchUpsertExternalActionsResponse{}
+	for filialID, actions := range filialMap {
+		_, err := h.actionUC.SyncExternalActions(ctx, filialID, actions)
+		if err != nil {
+			h.log.Error("SyncExternalActions failed", zap.Error(err))
+			return nil, status.Errorf(codes.Internal, "SyncExternalActions failed: %v", err)
+		}
+		for range actions {
+			resp.Actions = append(resp.Actions, &productpb.UpsertExternalActionResponse{
+				ActionId: uuid.New().String(),
+				Created:  true,
+			})
+		}
+	}
+	
+	return resp, nil
 }
 
 // ======================= Mappers =======================
